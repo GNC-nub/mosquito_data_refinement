@@ -18,14 +18,14 @@ PARAMETERS
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print('Antoine, this is main!\n Run this script AFTER loading the data into the correct folders/directory with the loading_matlab_file.py.\n Click the plots away to continue in script\n')
+    print('Hi reader, this is main!\n Run this script AFTER loading the data into the correct folders/directory with the loading_matlab_file.py.\n Click the plots away to continue in script\n')
 
 
 import ClassMosquito
 
 
-#run loading_matlab_file.py first!
-    #Put in your own paths to the matlab file and the place to store the data!
+# Run loading_matlab_file.py first!
+
 
 dataset = ClassMosquito.Dataset()
 trial = ClassMosquito.Trial(1)

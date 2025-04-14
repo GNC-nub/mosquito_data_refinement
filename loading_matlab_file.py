@@ -43,19 +43,18 @@ import os
 
 
 
+## Fill in your own paths here and run this file first!
+## Do this before running main.py!
 
-#Fill in your own paths here and run this file first! Do this before running main.py!
+#1. Fil in your path to the matlab file:
+path_matlab_file1 = '/Users/nubia/Desktop/Thesis_2.0/dataset/Database_time.mat' #replace this directory with your own!
 
-#path to the matlab file:
-path_matlab_file1 = '/Users/nubia/Desktop/Thesis/Datasets/Database_time.mat' #replace this directory with your own!
+#2. Fill in your path to where you want to store the new data structure (for example a desktop):
+path_csv_folder1 = '/Users/nubia/Desktop/Thesis_2.0/dataset' #replace this directory with your own
 
+#3. Now run this file
 
-
-#path to where you want to store the new data structure (for example a desktop):
-path_csv_folder1 = '/Users/nubia/Desktop/final_thesis_testing' #replace this directory with your own
-
-
-
+#4. When complete check if there are indeed 64 trials in your directory.
 
 
 def filtering_nan(lst):
