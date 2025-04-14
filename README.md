@@ -1,5 +1,5 @@
 ## 1. Loading the correct packages 
-Make sure the following packages are pip installed in your working environment: 
+Make sure the following packages are pip installed in your working environment / interpreter: 
 - numpy
 - h5py
 - sys
