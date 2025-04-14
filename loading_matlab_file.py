@@ -47,12 +47,12 @@ import os
 #Fill in your own paths here and run this file first! Do this before running main.py!
 
 #path to the matlab file:
-path_matlab_file1 = '/Users/nubia/Desktop/Thesis/Datasets/Database_time.mat'
+path_matlab_file1 = '/Users/nubia/Desktop/Thesis/Datasets/Database_time.mat' #replace this directory with your own!
 
 
 
 #path to where you want to store the new data structure (for example a desktop):
-path_csv_folder1 = '/Users/nubia/Desktop/final_thesis_testing'
+path_csv_folder1 = '/Users/nubia/Desktop/final_thesis_testing' #replace this directory with your own
 
 
 

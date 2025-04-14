@@ -1,9 +1,12 @@
-## Loading the dataset 
+## 1. Loading the dataset
 The first step is to load the dataset from the matlab file to a csv folder data structure for easy, direct and/or partial access.
 
-Add your own directory of the matlab file and the directory of where to store the new data folder in loading_matlab_file.py.
-    
-    DESCRIPTION
+1. Download the correct matlab file from the source and coppy your directory. 
+2. Open the 'loading_matlab_file.py' file.
+3. Add your own directory of the matlab file on the correct line in the 'loading_matlab_file.py' file.
+
+
+    DESCRIPTION 'loading_matlab_file.py' 
         matlab_to_csv_map(path_matlab_file, path_csv_folder)
             This is a function that takes the whole S3 matlab dataset and turns it into a csv files folder on the given path.
             The tracks are turned into a dictionary, then put into a pandas dataframe.
@@ -33,27 +36,30 @@ Add your own directory of the matlab file and the directory of where to store th
         When running this file csv files are made for every track and stored in this directory:
         '.../database_csv/Trial_{trial_number}/Trial_{trial_number}_Track_{track_number}.csv'
 
-## Running main.py and nan_testing.py 
-After loading the dataset and setting the right path's to the right directorys the code can be run. 
+## 2. Running main.py and nan_testing.py 
+Make sure you completed step one, before running any other files! 
 
-For generating the percentage of nan data in the original code run: nan_testing.py (in the saved csv strucutre most are deleted)
+For generating the information about the nan data in the original matlab file code run: nan_testing.py 
 
 For generating all the figures run main.py. There are short discriptions above every set of figure's. 
+You can togle on and off the figures by adding a # in fromt of the line. 
 
 Main.py calls mostly on the ClassMosquito.py file where three classes are written. 
 
-    DESCRIPTION main.py 
+    DESCRIPTION 'main.py' 
     This script puts out all the data needed for the BSc Thesis of Nubia Middelkoop.
     This code uses 3 classes from the file ClassMosquito.py:
         Track (to load single tracks), Trials (to load single trials) and Dataset (to load the whole dataset).
-    PARAMETERS main.py 
+    PARAMETERS 'ClassMosquito.py' 
         The class Dataset does not take any parameters
         The class Trial takes only one integer as an input: The trial nuber
         The class Track takes two integers parameters: the trial number and the track number
             Some tracks don't exist in this dataset,then an error message arises.
 
-## The other files: accessing_data.py and landing_capturing_area.py 
-In accessing_data.py file the follwoing functions are present: 
+## 3. The other files: accessing_data.py and landing_capturing_area.py 
+Other files are called on by the ClassMosquito.py file. 
+
+In accessing_data.py file the following functions are present: 
     accessing_track(trial, track); 
     accessing_trial(trial); 
     accessing_extra_info(info_field). 
