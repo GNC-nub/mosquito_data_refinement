@@ -1,4 +1,17 @@
-## 1. Loading the dataset
+## 1. Loading the correct packages 
+Make sure the following packages are pip installed in your working environment: 
+- numpy
+- h5py
+- sys
+- os
+- csv
+- matplotlib 
+- scripy 
+- statsmodels 
+- pandas
+
+
+## 2. Loading the dataset
 The first step is to load the dataset from the matlab file to a csv folder data structure for easy, direct and/or partial access.
 
 1. Download the correct matlab file from the source and coppy your directory. 
@@ -36,7 +49,7 @@ The first step is to load the dataset from the matlab file to a csv folder data 
         When running this file csv files are made for every track and stored in this directory:
         '.../database_csv/Trial_{trial_number}/Trial_{trial_number}_Track_{track_number}.csv'
 
-## 2. Running main.py and nan_testing.py 
+## 3. Running main.py and nan_testing.py 
 Make sure you completed step one, before running any other files! 
 
 For generating the information about the nan data in the original matlab file code run: nan_testing.py 
@@ -56,7 +69,7 @@ Main.py calls mostly on the ClassMosquito.py file where three classes are writte
         The class Track takes two integers parameters: the trial number and the track number
             Some tracks don't exist in this dataset,then an error message arises.
 
-## 3. The other files: accessing_data.py and landing_capturing_area.py 
+## 4. The other files: accessing_data.py and landing_capturing_area.py 
 Other files are called on by the ClassMosquito.py file. 
 
 In accessing_data.py file the following functions are present: 
