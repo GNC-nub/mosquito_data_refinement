@@ -58,7 +58,7 @@ trial.plotTrial()
 trial.plotTheta2DTrial()
 
 
-#Boxplots (it prints significance)
+#Boxplots (it prints significance in terminal)
 dataset.plotBoxplotCatchesConditions()
 dataset.plotBoxplotLandingCondition()
 dataset.plotBoxplotCatchesVsLandings()

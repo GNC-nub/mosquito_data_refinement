@@ -557,7 +557,7 @@ class Dataset:
 
     def __init__(self):  # if you want to load a track, fill in both trial and track, otherwise only whole trial
         self.total_mosquitos_per_trial = 50
-        self.total_number_trials = 65
+        self.total_number_trials = 64
 
         self.coordinate_list_dataset = None
         self.trialobjects = None
