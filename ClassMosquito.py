@@ -9,10 +9,10 @@ PARAMETERS
     The class Track takes two integers parameters: the trial number and the track number
         Some tracks don't exist in this dataset,then an error message arises.
 '''
-import numpy as np
 
-from accessing_data import *
-from landing_capturing_area import *
+
+
+from supportive_functions import *
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
@@ -20,6 +20,7 @@ from scipy.stats import f_oneway, sem, norm
 import scipy.stats as stats
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 import pandas as pd
+import numpy as np
 from statistics import median
 
 class Track:
@@ -38,29 +39,6 @@ class Track:
 
     def getTrack(self):
         return [self.x, self.y, self.z, self.time]
-
-    def getTrap(self, body_lower_z=-0.38, body_upper_z=-0.083, inlet_upper_z=0, body_radius=0.15, inlet_radius=0.055):
-        theta = np.linspace(0, 2 * np.pi, 50)
-
-        z_body = np.linspace(body_lower_z, body_upper_z, 50)
-        theta_grid_body, z_grid_body = np.meshgrid(theta, z_body)
-        x_grid_body = body_radius * np.cos(theta_grid_body)
-        y_grid_body = body_radius * np.sin(theta_grid_body)
-
-        z_inlet = np.linspace(body_upper_z, inlet_upper_z, 50)
-        theta_grid_inlet, z_grid_inlet = np.meshgrid(theta, z_inlet)
-        x_grid_inlet = inlet_radius * np.cos(theta_grid_inlet)
-        y_grid_inlet = inlet_radius * np.sin(theta_grid_inlet)
-
-        return x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet
-
-    def getTrap2D(self, body_lower_z=-0.38, body_upper_z=-0.083, body_radius=0.15, inlet_radius=0.055):
-        inlet_r = [0, inlet_radius, inlet_radius, 0]
-        inlet_z = [0, 0, body_upper_z, body_upper_z]
-
-        body_r = [0, body_radius, body_radius, 0]
-        body_z = [body_upper_z, body_upper_z, body_lower_z, body_lower_z]
-        return inlet_r, inlet_z, body_r, body_z
 
 
 
@@ -117,7 +95,7 @@ class Track:
         ax.set_zlabel('Z')
         ax.set_title('3D (x, y, z) plot of a single track')
 
-        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = self.getTrap()
+        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
         ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
         ax.plot_surface(x_grid_inlet, y_grid_inlet, z_grid_inlet, alpha=0.5, color='b')
         ax.set_aspect('equal', adjustable='box')
@@ -131,7 +109,7 @@ class Track:
             r.append(np.sqrt(self.x[i]**2 + self.y[i]**2))
         plt.plot(r, self.z)
         plt.scatter(last_r, last_z, color='r', marker='o')
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         # Plot trap
         plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
@@ -228,30 +206,6 @@ class Trial:
 
     def getDurationTrial(self):
         return self.getEndTimeTrial() - self.getStartTimeTrial()
-
-    def getTrap(self, body_lower_z=-0.38, body_upper_z=-0.083, inlet_upper_z=0, body_radius=0.15, inlet_radius=0.055):
-        theta = np.linspace(0, 2 * np.pi, 50)
-
-        z_body = np.linspace(body_lower_z, body_upper_z, 50)
-        theta_grid_body, z_grid_body = np.meshgrid(theta, z_body)
-        x_grid_body = body_radius * np.cos(theta_grid_body)
-        y_grid_body = body_radius * np.sin(theta_grid_body)
-
-        z_inlet = np.linspace(body_upper_z, inlet_upper_z, 50)
-        theta_grid_inlet, z_grid_inlet = np.meshgrid(theta, z_inlet)
-        x_grid_inlet = inlet_radius * np.cos(theta_grid_inlet)
-        y_grid_inlet = inlet_radius * np.sin(theta_grid_inlet)
-
-        return x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet
-
-    def getTrap2D(self, body_lower_z=-0.38, body_upper_z=-0.083, body_radius=0.15, inlet_radius=0.055):
-        inlet_r = [0, inlet_radius, inlet_radius, 0]
-        inlet_z = [0, 0, body_upper_z, body_upper_z]
-
-        body_r = [0, body_radius, body_radius, 0]
-        body_z = [body_upper_z, body_upper_z, body_lower_z, body_lower_z]
-        return inlet_r, inlet_z, body_r, body_z
-
 
 
 #resting time
@@ -443,7 +397,7 @@ class Trial:
         ax.set_title('a) 3d (x, y, z) plot of all the tracks in one trial')
 
         #plot trap
-        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = self.getTrap()
+        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
         ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
         ax.plot_surface(x_grid_inlet, y_grid_inlet, z_grid_inlet, alpha=0.5, color='b')
         ax.set_aspect('equal', adjustable='box')
@@ -459,7 +413,7 @@ class Trial:
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
 
-        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = self.getTrap()
+        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
         ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
         ax.plot_surface(x_grid_inlet, y_grid_inlet, z_grid_inlet, alpha=0.5, color='b')
 
@@ -477,7 +431,7 @@ class Trial:
             plt.plot(r, z)
             plt.scatter(last_r, last_z, color='r', marker='o', s = 1)
         # Plot trap
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.8)
@@ -505,7 +459,7 @@ class Trial:
         plt.ylabel('z coordinate')
         plt.title('Density Heatmap of Landing Coordinates')
         #plot trap
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
@@ -527,7 +481,7 @@ class Trial:
         ax.set_title('a) A take-off track that lands again')
 
         #plot trap
-        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = self.getTrap()
+        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
         ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
         ax.plot_surface(x_grid_inlet, y_grid_inlet, z_grid_inlet, alpha=0.5, color='b')
         ax.set_aspect('equal', adjustable='box')
@@ -547,7 +501,7 @@ class Trial:
         ax.set_title('b) A take-off track that leads to capture')
 
         #plot trap
-        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = self.getTrap()
+        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
         ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
         ax.plot_surface(x_grid_inlet, y_grid_inlet, z_grid_inlet, alpha=0.5, color='b')
         ax.set_aspect('equal', adjustable='box')
@@ -675,29 +629,6 @@ class Dataset:
             obj = Trial(trial_num=i)
             object_array.append(obj)
         return object_array
-
-    def getTrap(self, body_lower_z=-0.38, body_upper_z=-0.083, inlet_upper_z=0, body_radius=0.15, inlet_radius=0.055):
-        theta = np.linspace(0, 2 * np.pi, 50)
-
-        z_body = np.linspace(body_lower_z, body_upper_z, 50)
-        theta_grid_body, z_grid_body = np.meshgrid(theta, z_body)
-        x_grid_body = body_radius * np.cos(theta_grid_body)
-        y_grid_body = body_radius * np.sin(theta_grid_body)
-
-        z_inlet = np.linspace(body_upper_z, inlet_upper_z, 50)
-        theta_grid_inlet, z_grid_inlet = np.meshgrid(theta, z_inlet)
-        x_grid_inlet = inlet_radius * np.cos(theta_grid_inlet)
-        y_grid_inlet = inlet_radius * np.sin(theta_grid_inlet)
-
-        return x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet
-
-    def getTrap2D(self, body_lower_z=-0.38, body_upper_z=-0.083, body_radius=0.15, inlet_radius=0.055):
-        inlet_r = [0, inlet_radius, inlet_radius, 0]
-        inlet_z = [0, 0, body_upper_z, body_upper_z]
-
-        body_r = [0, body_radius, body_radius, 0]
-        body_z = [body_upper_z, body_upper_z, body_lower_z, body_lower_z]
-        return inlet_r, inlet_z, body_r, body_z
 
     def getStartTimes(self):
         if self.trialobjects == None:
@@ -1316,7 +1247,7 @@ class Dataset:
         plt.ylabel('z coordinate')
         plt.title('Density Heatmap of Landing Coordinates Dataset')
         # plot trap
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', edgecolor = 'none', alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', edge_color = 'none', alpha = 0.5)
         plt.xlim(0, 0.3)
@@ -1345,7 +1276,7 @@ class Dataset:
         plt.ylabel('z coordinates')
 
         # plot trap
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
@@ -1374,7 +1305,7 @@ class Dataset:
         plt.ylabel('z coordinates')
 
         # plot trap
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
@@ -1407,7 +1338,7 @@ class Dataset:
         plt.ylabel('z coordinates')
 
         # plot trap
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
@@ -1437,7 +1368,7 @@ class Dataset:
             ax[index].set_facecolor('white')
             ax[index].set_title(f'{condition}')
 
-            inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
             ax[index].fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
             ax[index].fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
             ax[index].set_xlim(0, 0.3)
@@ -1473,7 +1404,7 @@ class Dataset:
         plt.ylabel('z coordinates')
 
         # plot trap
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
@@ -1506,7 +1437,7 @@ class Dataset:
         plt.ylabel('z coordinates')
 
         # plot trap
-        inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)

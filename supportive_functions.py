@@ -1,9 +1,40 @@
 '''
 READ ME
+    In this file are all the functions that are used within all the classes of ClassMosquito.py.
+    These are general functions like opening a specific csv file, calculating the landing area,
+    or generating the visualisation of the trap in 2 or 3D.
+
+    The following functions are within this file:
+        landing_area(x, y, z)
+        capturing_area(x, y, z)
+        accessing_track(trial, track)
+        accessing_trial(trial)
+        accessing_extra_info(info_field)
+
+
+
+READ ME for:
+    landing_area(x, y, z)
+    capturing_area(x, y, z)
+DESCRIPTION
+    These functions determine if a single coordinate is within a capturing or a landing area
+
+PARAMETERS
+    Both functions take three float numbers (x, y and z) form a  single coordinate.
+
+OUTPUT
+    If the coordinate is within the capturing or respectively landing area the output is True, otherwise it is False.
+
+RESULTS
+    In the whole dataset 3197 mosquitos are landing. (9.38 %)
+    In the whole dataset 1194 mosquitos are captured. (3.5 %)
+
+
+
+READ ME for:
     accessing_track(trial, track)
     accessing_trial(trial)
     accessing_extra_info(info_field)
-
 DESCRIOPTION
     accessing_track(trial, track) gives the data of a single track of a given trial.
     accessing_trial(trial) gives the data of a whole trial
@@ -12,7 +43,6 @@ DESCRIOPTION
 PARAMETERS
     info_field in accessing_extra_info(): Fil in one of the extra information field names options:
         'Condition', 'Day', 'TimeStart' or 'Catches'.
-
 
 OUTPUT
     accessing_track(trial, track) gives an output like this:
@@ -25,14 +55,47 @@ OUTPUT
 
 '''
 
+
+
+
+
+import numpy as np
 import os
 import csv
 import sys
 import h5py
-import numpy as np
-
 from loading_matlab_file import path_matlab_file1, path_csv_folder1
 basemap_csv_path  = os.path.join(path_csv_folder1,'database_csv')
+
+def landing_area(x, y, z, landing_width=0.03, trap_height = 0.388, trap_radius = 0.15, inlet_height = 0.083, inlet_radius = 0.055):
+    distance = np.sqrt((x**2)+(y**2))
+    landing = False
+
+    if -landing_width < z < 0:
+        if inlet_radius < distance < inlet_radius + landing_width:
+            landing = True
+    elif -(inlet_height - landing_width) < z < -landing_width:
+        if inlet_radius - landing_width < distance < inlet_radius + landing_width:
+            landing = True
+    elif -(inlet_height + landing_width) < z < -(inlet_height - landing_width):
+        if inlet_radius - landing_width < distance < trap_radius + landing_width:
+            landing = True
+    elif -trap_height < z < -(inlet_height + landing_width):
+        if trap_radius - landing_width < distance < trap_radius + landing_width:
+            landing = True
+    return landing
+
+def capturing_area(x, y, z, capturing_width = 0.03, inlet_radius = 0.055):
+    distance = np.sqrt((x**2)+(y**2))
+    capture = False
+    if 0 < z < capturing_width:
+        if distance < (inlet_radius + capturing_width):
+            capture = True
+    elif -capturing_width < z < 0:
+        if distance < inlet_radius:
+            capture = True
+    return capture
+
 
 def accessing_track(trial, track):
     track_file = os.path.join(basemap_csv_path, f'Trial_{trial}/Trial_{trial}_Track_{track}.csv')
@@ -118,3 +181,29 @@ def accessing_extra_info(info_field):
             info = tmp
     return info
 
+
+
+
+def getTrap(body_lower_z=-0.38,body_upper_z=-0.083,inlet_upper_z=0,body_radius=0.15,inlet_radius=0.055):
+    theta = np.linspace(0, 2 * np.pi, 50)
+
+    z_body = np.linspace(body_lower_z, body_upper_z, 50)
+    theta_grid_body, z_grid_body = np.meshgrid(theta, z_body)
+    x_grid_body = body_radius * np.cos(theta_grid_body)
+    y_grid_body = body_radius * np.sin(theta_grid_body)
+
+    z_inlet = np.linspace(body_upper_z, inlet_upper_z, 50)
+    theta_grid_inlet, z_grid_inlet = np.meshgrid(theta, z_inlet)
+    x_grid_inlet = inlet_radius * np.cos(theta_grid_inlet)
+    y_grid_inlet = inlet_radius * np.sin(theta_grid_inlet)
+
+    return x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet
+
+
+def getTrap2D(body_lower_z=-0.38, body_upper_z=-0.083, body_radius=0.15, inlet_radius=0.055):
+    inlet_r = [0, inlet_radius, inlet_radius, 0]
+    inlet_z = [0, 0, body_upper_z, body_upper_z]
+
+    body_r = [0, body_radius, body_radius, 0]
+    body_z = [body_upper_z, body_upper_z, body_lower_z, body_lower_z]
+    return inlet_r, inlet_z, body_r, body_z
