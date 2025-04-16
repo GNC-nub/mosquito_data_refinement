@@ -37,10 +37,8 @@ class Track:
         self.condition = condition
         self.header = f'Trial_{trial_num+1}_Track_{track_num}'
 
-    def getTrack(self):
+    def getTrack(self): # [x, y, z, time]
         return [self.x, self.y, self.z, self.time]
-
-
 
     def functionVelocity(self, x, delta_t):
         v = []
@@ -67,7 +65,6 @@ class Track:
         acceleration_y = self.functionVelocity(vy, delta_t)
         acceleration_z = self.functionVelocity(vz, delta_t)
         return acceleration_x, acceleration_y, acceleration_z, delta_t
-
 
     def lastCoordinatesTrack(self):
         last_x =self.x[-1]
@@ -132,34 +129,42 @@ class Trial:
         self.take_off_points = None
         self.num_tracks = None
 
-
+# Initializes self.coordinate_list_trial, aka a list of all the point in a trial
+# --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ], exe... ]
     def initiateCoordinateList(self):
-        self.coordinate_list_trial = accessing_trial(self.trial_num)  # [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ], exe... ]
+        self.coordinate_list_trial = accessing_trial(self.trial_num)
 
+# Initializes self.landingpoints, aka a list of all the landing point in a trial
+    # --> [ [x, y, z, time], exe...]
     def initializeLandingPoints(self):
         landingpoints_list = []
-        last_coordinates = self.lastCoordinatesTrial()
-        for coordinate in last_coordinates:
+        for coordinate in self.lastCoordinatesTrial():
             header, [x, y, z, time] = coordinate
             if landing_area(x, y, z) == True:
                 landingpoints_list.append([x, y, z, time])
         self.landingpoints = landingpoints_list
 
+# Initializes self.take_off_points, a list all the take-off point in a trial
+    # --> [ [x, y, z, time], exe...]
     def initializeTakeOffPoints(self):
         take_off_points = []
-        last_coordinates = self.firstCoordinatesTrial()
-        for coordinate in last_coordinates:
+        for coordinate in self.firstCoordinatesTrial():
             header, [x, y, z, time] = coordinate
             if landing_area(x, y, z) == True:
                 take_off_points.append([x, y, z, time])
         self.take_off_points = take_off_points
 
+# All the coordinates of one trial
+    # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ] , exe... ]
     def getTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
-        return self.coordinate_list_trial  # [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ] , exe... ]
+        return self.coordinate_list_trial
 
         # first/last coordinates
+
+# List of last coordinates of a trial
+    # --> [ [ header, [x, y, z, time] ], exe... ]
     def lastCoordinatesTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -170,6 +175,8 @@ class Trial:
             storage.append([header, last_coordinates])
         return storage
 
+# List of first coordinates of a trial
+    # --> [ [ header, [x, y, z, time] ], exe... ]
     def firstCoordinatesTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -180,12 +187,16 @@ class Trial:
             storage.append([header, first_coordinates])
         return storage
 
+# Total numer of tracks of a trial
+    # --> amount
     def getNumTracks(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
         num_tracks = len(self.coordinate_list_trial)
         return num_tracks
 
+# End time of a trial
+    # --> amount
     def getEndTimeTrial(self):
         last_time_point = 0
         for track in self.getTrial():
@@ -195,6 +206,8 @@ class Trial:
                 last_time_point = end_point
         return last_time_point
 
+# Start time of a trial
+    # --> amount
     def getStartTimeTrial(self):
         first_time_point = 1500
         for track in self.getTrial():
@@ -204,11 +217,17 @@ class Trial:
                 first_time_point = first_point
         return first_time_point
 
+# Duration of a trial
+    # --> amount
     def getDurationTrial(self):
         return self.getEndTimeTrial() - self.getStartTimeTrial()
 
 
-#resting time
+# Resting time #
+
+# Generates the most likely resting pairs in a dictionary, with lists of the resting time
+# and the associated resting spots in a trial.
+        # --> pairs[i_land] = i_takeoff (dictionary), [resting_times], [resting_points]
     def getRestingPairsTimesPoints(self, threshold = 0.02):
         self.initializeLandingPoints()
         self.initializeTakeOffPoints()
@@ -247,19 +266,31 @@ class Trial:
                 resting_points.append(resting_point)
         return pairs, resting_times, resting_points
 
+# Only get the resting time list of a trial
+    # --> [resting_times]
     def getRestingTimeTrial(self, radius = 0.02):
         pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius)
         return resting_times
+
+# Only get the resting points list of a trial
+    # --> [resting_points]
     def getRestingPointsTrial(self, radius = 0.02):
         pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius)
         return resting_points
+
+# Only get the resting pairs dictionary of a trial     !NOT IN USE!
+    # --> pairs[i_land] = i_takeoff (dictionary)
     def getRestingPairsTrial(self, radius =0.02):
         pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius)
         return pairs
+
+# Get the total number of associated (landing -- take-off) pairs of a trial
+    # --> amount
     def countRestingPairsTrial(self, radius = 0.02):
         return len(self.getRestingTimeTrial(radius))
 
-# not really used, but keeping it for now: checks if thre are any rsting times that are more than 1320.
+# Checks if there are any resting times that are more than 1320 / checks for impossible resting times   !NOT IN USE!
+    # --> amount
     def getFalseRestingTimeTrial(self, radius = 0.02, resting_time_limit = 1320): #based on the fact that most trials are from 180 s to 1500 s
         count = 0
         for resting_time in self.getRestingTimeTrial(radius):
@@ -268,10 +299,15 @@ class Trial:
         return count
 
 
-#landing/capture
+# Landing and Capture rates #
+
+# Get total of the catches for a trial measured by Cribellier et al. (2020)
+    # --> amount
     def getMeasuredCatchesTrial(self):
         return int(accessing_extra_info("Catches")[self.trial_num - 1])
 
+# Get total of the catches of a trial measured by this program. If the track ends up in the defined capture area it is cached.
+    # --> amount
     def countSimulatedCatchesTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -284,6 +320,8 @@ class Trial:
                 count += 1
         return count
 
+# Get total of the landings of a trial measured by this program. If the track ends up in the defined landing area it is a landing.
+    # --> amount
     def countLandingsTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -296,6 +334,8 @@ class Trial:
                 count += 1
         return count
 
+# Get total of the take-offs of a trial measured by this program. If the track begins up in the defined landing area it is a take-off.
+    # --> amount
     def countTakeOffsTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -309,7 +349,10 @@ class Trial:
         return count
 
 
-#Take_off analysis
+# What happens after take-off analysis #
+
+# Get total amount of tracks in a trial that begin in take-off and end in capture
+    # --> amount
     def countLandingToCaptureTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -320,6 +363,9 @@ class Trial:
                     count += 1
         return count
 
+# Get total amount of tracks in a trial that begin and end in landing
+# Landing again
+    # --> amount
     def countLandingAgainTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -330,6 +376,8 @@ class Trial:
                 count += 1
         return count
 
+# Get list of coordinates that begin in take-ff and end in capture of a trial
+    # --> [[x, y, z], exe... ]
     def getCoordinatesLandingToCapture(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -340,6 +388,9 @@ class Trial:
                 take_off_coordinates.append([x[0], y[0], z[0]])
         return take_off_coordinates
 
+# Get list of coordinates that begin and end in landing of a trial
+# Landing again
+    # --> [[x, y, z], exe... ]
     def getCoordinatesLandingAgain(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -350,6 +401,8 @@ class Trial:
                 take_off_coordinates.append([x[0], y[0], z[0]])
         return take_off_coordinates
 
+# Get a list of the whole tracks that land again
+    # --> [[ [x], [y], [z] ], exe... ]
     def getTracksLandingAgain(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -360,6 +413,8 @@ class Trial:
                 landing_again_tracks.append([x, y, z])
         return landing_again_tracks
 
+# Get a list of the whole tracks that begin in take-off and end in capture
+    # --> [[ [x], [y], [z] ], exe... ]
     def getTracksLandingtoCapture(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -371,8 +426,10 @@ class Trial:
         return landing_to_capture_tracks
 
 
+# Plotting  #
 
-#plots
+# Plot all the tracks of a trial in one 3D figure
+    # --> 3D plot
     def plotTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
@@ -396,13 +453,15 @@ class Trial:
         ax.set_zlabel('Z')
         ax.set_title('a) 3d (x, y, z) plot of all the tracks in one trial')
 
-        #plot trap
+        # plot trap
         x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
         ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
         ax.plot_surface(x_grid_inlet, y_grid_inlet, z_grid_inlet, alpha=0.5, color='b')
         ax.set_aspect('equal', adjustable='box')
         plt.show()
 
+# Plot all the landing points of a trial in one 3D figure
+    # --> 3D plot
     def plotLandingPointsTrial(self):
         ax = plt.figure().add_subplot(projection='3d')
         for track in self.lastCoordinatesTrial():
@@ -419,7 +478,9 @@ class Trial:
 
         plt.show()
 
-    def plotTheta2DTrial(self):
+# Plot all the tracks of a trial in one 2D figure
+    # --> 2D plot
+    def plot2DTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
         for track in self.coordinate_list_trial:
@@ -442,7 +503,9 @@ class Trial:
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
         plt.show()
 
-    def plotThetaLandingPointsTrial(self):
+# Plot all the landing points of a trial in one 2D figure
+    # --> 2D plot
+    def plot2DLandingPointsTrial(self):
         r_list =[]
         z_list =[]
         self.initializeLandingPoints()
@@ -467,6 +530,8 @@ class Trial:
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
         plt.show()
 
+#PLot a single track that begins and ends in landing
+    # --> 3D plot
     def plotTrackLandingAgainTrial(self, nr = 8):
         ax = plt.figure().add_subplot(projection='3d')
         tracks = self.getTracksLandingAgain()
@@ -487,6 +552,8 @@ class Trial:
         ax.set_aspect('equal', adjustable='box')
         plt.show()
 
+# PLot a single track that begins in take-off and ends in capture
+    # --> 3D plot
     def plotTrackLandingToCaptureTrial(self, nr = 1):
         ax = plt.figure().add_subplot(projection='3d')
         tracks = self.getTracksLandingtoCapture()
@@ -1071,6 +1138,13 @@ class Dataset:
         plt.show()
 
 
+
+
+
+# Sensitivity analysis / assotiation analysis
+
+
+# -->
     def plotBoxplotRadiusAssociations(self):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()

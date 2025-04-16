@@ -64,7 +64,7 @@ track.plotTheta2DTrack()  # 2D
 
 # single trial plotting
 trial.plotTrial()  # 3D
-trial.plotTheta2DTrial()  # 2D
+trial.plot2DTrial()  # 2D
 
 
 # Boxplot statistics to see significant differences  (significance in terminal)

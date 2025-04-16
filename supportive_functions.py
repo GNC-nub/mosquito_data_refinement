@@ -10,6 +10,8 @@ READ ME
         accessing_track(trial, track)
         accessing_trial(trial)
         accessing_extra_info(info_field)
+        getTrap()
+        getTrap2D()
 
 
 
@@ -52,6 +54,15 @@ OUTPUT
         [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time], exe... ]
 
     accessing_extra_info(info_field') put outs a list of the info asked in a list form. Every trial has one of each 'extra_info's'
+
+
+
+READ ME for:
+    getTrap(body_lower_z=-0.38,body_upper_z=-0.083,inlet_upper_z=0,body_radius=0.15,inlet_radius=0.055)
+    getTrap2D(body_lower_z=-0.38, body_upper_z=-0.083, body_radius=0.15, inlet_radius=0.055)
+DISCRIPTION:
+    Generates the correct values to create a trap in a figure either in 2D or 3D.
+
 
 '''
 
