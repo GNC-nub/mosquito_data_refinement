@@ -133,8 +133,8 @@ class Track:
         plt.scatter(last_r, last_z, color='r', marker='o')
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
         # Plot trap
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.8)
         plt.ylim(-0.5, 0.5)
         plt.xlabel('r')
@@ -478,8 +478,8 @@ class Trial:
             plt.scatter(last_r, last_z, color='r', marker='o', s = 1)
         # Plot trap
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.8)
         plt.ylim(-0.5, 0.5)
         plt.xlabel('r')
@@ -506,8 +506,8 @@ class Trial:
         plt.title('Density Heatmap of Landing Coordinates')
         #plot trap
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
         plt.ylim(-0.45, 0.1)
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
@@ -1317,8 +1317,8 @@ class Dataset:
         plt.title('Density Heatmap of Landing Coordinates Dataset')
         # plot trap
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', edgecolor = 'none', alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', edge_color = 'none', alpha = 0.5)
         plt.xlim(0, 0.3)
         plt.ylim(-0.45, 0.1)
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
@@ -1346,8 +1346,8 @@ class Dataset:
 
         # plot trap
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
         plt.ylim(-0.45, 0.1)
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
@@ -1375,8 +1375,8 @@ class Dataset:
 
         # plot trap
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
         plt.ylim(-0.45, 0.1)
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
@@ -1408,8 +1408,8 @@ class Dataset:
 
         # plot trap
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
         plt.ylim(-0.45, 0.1)
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
@@ -1438,8 +1438,8 @@ class Dataset:
             ax[index].set_title(f'{condition}')
 
             inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-            ax[index].fill(inlet_r, inlet_z, color='purple')
-            ax[index].fill(body_r, body_z, color='purple')
+            ax[index].fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+            ax[index].fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
             ax[index].set_xlim(0, 0.3)
             ax[index].set_ylim(-0.45, 0.1)
             ax[index].set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
@@ -1474,8 +1474,8 @@ class Dataset:
 
         # plot trap
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
         plt.ylim(-0.45, 0.1)
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
@@ -1507,8 +1507,8 @@ class Dataset:
 
         # plot trap
         inlet_r, inlet_z, body_r, body_z = self.getTrap2D()
-        plt.fill(inlet_r, inlet_z, color='purple')
-        plt.fill(body_r, body_z, color='purple')
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
         plt.xlim(0, 0.3)
         plt.ylim(-0.45, 0.1)
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square

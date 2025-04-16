@@ -18,7 +18,7 @@ PARAMETERS
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print('Hi reader, this is main!\n Run this script AFTER loading the data into the correct folders/directory with the loading_matlab_file.py.\n Click the plots away to continue in script\n')
+    print('Hi reader, this is main!\n Run this script AFTER loading the data into the correct folders/directory with the loading_matlab_file.py.\n Close the plots to continue in script\n')
 
 
 import ClassMosquito
