@@ -78,31 +78,31 @@ import h5py
 from loading_matlab_file import path_matlab_file1, path_csv_folder1
 basemap_csv_path  = os.path.join(path_csv_folder1,'database_csv')
 
-def landing_area(x, y, z, landing_width=0.03, trap_height = 0.388, trap_radius = 0.15, inlet_height = 0.083, inlet_radius = 0.055):
+def landing_area(x, y, z, boundary=0.03, trap_height = 0.388, trap_radius = 0.15, inlet_height = 0.083, inlet_radius = 0.055):
     distance = np.sqrt((x**2)+(y**2))
     landing = False
 
-    if -landing_width < z < 0:
-        if inlet_radius < distance < inlet_radius + landing_width:
+    if -boundary < z < 0:
+        if inlet_radius < distance < inlet_radius + boundary:
             landing = True
-    elif -(inlet_height - landing_width) < z < -landing_width:
-        if inlet_radius - landing_width < distance < inlet_radius + landing_width:
+    elif -(inlet_height - boundary) < z < -boundary:
+        if inlet_radius - boundary < distance < inlet_radius + boundary:
             landing = True
-    elif -(inlet_height + landing_width) < z < -(inlet_height - landing_width):
-        if inlet_radius - landing_width < distance < trap_radius + landing_width:
+    elif -(inlet_height + boundary) < z < -(inlet_height - boundary):
+        if inlet_radius - boundary < distance < trap_radius + boundary:
             landing = True
-    elif -trap_height < z < -(inlet_height + landing_width):
-        if trap_radius - landing_width < distance < trap_radius + landing_width:
+    elif -trap_height < z < -(inlet_height + boundary):
+        if trap_radius - boundary < distance < trap_radius + boundary:
             landing = True
     return landing
 
-def capturing_area(x, y, z, capturing_width = 0.03, inlet_radius = 0.055):
+def capturing_area(x, y, z, boundary = 0.03, inlet_radius = 0.055):
     distance = np.sqrt((x**2)+(y**2))
     capture = False
-    if 0 < z < capturing_width:
-        if distance < (inlet_radius + capturing_width):
+    if 0 < z < boundary:
+        if distance < (inlet_radius + boundary):
             capture = True
-    elif -capturing_width < z < 0:
+    elif -boundary < z < 0:
         if distance < inlet_radius:
             capture = True
     return capture

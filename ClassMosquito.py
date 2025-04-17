@@ -130,27 +130,28 @@ class Trial:
         self.num_tracks = None
 
 # Initializes self.coordinate_list_trial, aka a list of all the point in a trial
-# --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ], exe... ]
+    # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ], exe... ]
     def initiateCoordinateList(self):
         self.coordinate_list_trial = accessing_trial(self.trial_num)
 
+
 # Initializes self.landingpoints, aka a list of all the landing point in a trial
     # --> [ [x, y, z, time], exe...]
-    def initializeLandingPoints(self):
+    def initializeLandingPoints(self, boundary = 0.03):
         landingpoints_list = []
         for coordinate in self.lastCoordinatesTrial():
             header, [x, y, z, time] = coordinate
-            if landing_area(x, y, z) == True:
+            if landing_area(x, y, z, boundary = boundary) == True:
                 landingpoints_list.append([x, y, z, time])
         self.landingpoints = landingpoints_list
 
 # Initializes self.take_off_points, a list all the take-off point in a trial
     # --> [ [x, y, z, time], exe...]
-    def initializeTakeOffPoints(self):
+    def initializeTakeOffPoints(self, boundary = 0.03):
         take_off_points = []
         for coordinate in self.firstCoordinatesTrial():
             header, [x, y, z, time] = coordinate
-            if landing_area(x, y, z) == True:
+            if landing_area(x, y, z, boundary = boundary) == True:
                 take_off_points.append([x, y, z, time])
         self.take_off_points = take_off_points
 
@@ -778,13 +779,13 @@ class Dataset:
 
 # Get landing coordinates in 2D in two lists: r and z
     # ---> list r , list z
-    def getlandingPointsTheta(self):
+    def getlandingPointsTheta(self, area_boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
         z_list = []
         for trial_object in self.trialobjects:
-            trial_object.initializeLandingPoints()
+            trial_object.initializeLandingPoints(boundary = area_boundary)
             for coordinate in trial_object.landingpoints:
                 x, y, z, time = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
@@ -827,7 +828,6 @@ class Dataset:
 
 
 # Resting time #
-
 
 # Get average resting time in a string
     # --> mean +- standard deviation
@@ -935,7 +935,7 @@ class Dataset:
         return dataset_coordinates
 
 
-# Statistics#
+# Statistics #
 
 # Does the anova test between the three short-range cue conditions
     # Input:  [ [without], [with_heat], [with_heat_water] ]
@@ -1113,6 +1113,7 @@ class Dataset:
         plt.show()
 
 
+# Plotting resting times #
 
 # PLots histogram of resting times of the whole dataset
     def plotHistogramRestingTime(self):
@@ -1199,7 +1200,7 @@ class Dataset:
         plt.ylabel('Resting time (s)')
         plt.show()
 
-# PLot a volin plot of the resting times differentiating between the three short-range cue conditions
+# PLot a violin plot of the resting times differentiating between the three short-range cue conditions
     def plotViolinplotRestingTimeCondition(self):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
@@ -1237,44 +1238,6 @@ class Dataset:
         plt.show()
 
 
-# Sensitivity analysis / association analysis #
-
-# PLot a boxplot differentiating between different possible radius and the number of landing--take-off associations
-    def plotBoxplotRadiusAssociations(self):
-        if self.trialobjects == None:
-            self.trialobjects = self.getTrialObjects()
-        pairs1 = []
-        pairs2 = []
-        pairs3 = []
-        pairs4 = []
-        for trial_object in self.trialobjects:
-            pairs1.append(trial_object.countRestingPairsTrial(0.01))
-            pairs2.append(trial_object.countRestingPairsTrial(0.02))
-            pairs3.append(trial_object.countRestingPairsTrial(0.03))
-            pairs4.append(trial_object.countRestingPairsTrial(0.04))
-        data = [pairs1, pairs2, pairs3, pairs4]
-        plt.boxplot(data)
-        plt.title('Nr of of associated landings with take offs per radius threshold')
-        plt.xticks([1, 2, 3, 4], ['r = 0.01', 'r = 0.02', 'r = 0.03', 'r = 0.04'])
-        plt.ylabel('nr of associated landings with take offs')
-        plt.show()
-
-# PLot boxplot showing the differences in amount between the landings, take-offs and landing--take-off associated pairs.
-    def plotBoxplotCountLandingTakeOffAccosiation(self):
-        if self.trialobjects == None:
-            self.trialobjects = self.getTrialObjects()
-        landings, takeoffs, associated_pairs = [], [], []
-        for trial_object in self.trialobjects:
-            landings.append(trial_object.countLandingsTrial())
-            takeoffs.append(trial_object.countTakeOffsTrial())
-            associated_pairs.append(trial_object.countRestingPairsTrial())
-        data = [landings, takeoffs, associated_pairs]
-        plt.boxplot(data)
-        plt.title('Boxplot of the number of landings, take-offs and landing / take_off pairs')
-        plt.xticks([1, 2, 3], ['Landings', 'Take-offs', 'associated pairs'])
-        plt.ylabel('nr of associated landings with take offs')
-        plt.show()
-
 
 # creating matrices #
 
@@ -1289,8 +1252,8 @@ class Dataset:
 
 # Get the matrix of the landing points
     # --> matrix
-    def getMatrixLandingPoints(self):
-        r, z = self.getlandingPointsTheta()
+    def getMatrixLandingPoints(self, area_boundary = 0.03):
+        r, z = self.getlandingPointsTheta(area_boundary = area_boundary)
         landingpoint_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix))
         landingpoint_count_matrix = landingpoint_count_matrix.T
@@ -1436,15 +1399,15 @@ class Dataset:
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
         plt.show()
 
-# # Plot heatmap of all the landing points, normalized by volume!
+# Plot heatmap of all the landing points, normalized by volume!
     # --> heatmap
-    def plotHeatmapLandingPointNormilized(self):
+    def plotHeatmapLandingPointNormilized(self, area_boundary = 0.03):
         volume_matrix = self.getMatrixNormilizingVolume()
-        landingpoint_matrix = self.getMatrixLandingPoints()
+        landingpoint_matrix = self.getMatrixLandingPoints(area_boundary = area_boundary)
 
         density_matrix = landingpoint_matrix / volume_matrix
 
-        #plot matrix
+        # plot matrix
         fig = plt.figure()
         ax = fig.add_subplot(132, title='Density Heatmap: Landing points per volume', aspect='equal')
         X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
@@ -1635,4 +1598,85 @@ class Dataset:
         plt.ylim(-0.45, 0.1)
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
         plt.show()
+
+
+# Sensitivity analysis / association analysis #
+
+# PLot a boxplot differentiating between different possible radius and the number of landing--take-off associations
+    def plotBoxplotRadiusAssociations(self):
+        if self.trialobjects == None:
+            self.trialobjects = self.getTrialObjects()
+        pairs1 = []
+        pairs2 = []
+        pairs3 = []
+        pairs4 = []
+        for trial_object in self.trialobjects:
+            pairs1.append(trial_object.countRestingPairsTrial(0.01))
+            pairs2.append(trial_object.countRestingPairsTrial(0.02))
+            pairs3.append(trial_object.countRestingPairsTrial(0.03))
+            pairs4.append(trial_object.countRestingPairsTrial(0.04))
+        data = [pairs1, pairs2, pairs3, pairs4]
+        plt.boxplot(data)
+        plt.title('Nr of of associated landings with take offs per radius threshold')
+        plt.xticks([1, 2, 3, 4], ['r = 0.01', 'r = 0.02', 'r = 0.03', 'r = 0.04'])
+        plt.ylabel('nr of associated landings with take offs')
+        plt.show()
+
+# PLot boxplot showing the differences in amount between the landings, take-offs and landing--take-off associated pairs.
+    def plotBoxplotCountLandingTakeOffAccosiation(self):
+        if self.trialobjects == None:
+            self.trialobjects = self.getTrialObjects()
+        landings, takeoffs, associated_pairs = [], [], []
+        for trial_object in self.trialobjects:
+            landings.append(trial_object.countLandingsTrial())
+            takeoffs.append(trial_object.countTakeOffsTrial())
+            associated_pairs.append(trial_object.countRestingPairsTrial())
+        data = [landings, takeoffs, associated_pairs]
+        plt.boxplot(data)
+        plt.title('Boxplot of the number of landings, take-offs and landing / take_off pairs')
+        plt.xticks([1, 2, 3], ['Landings', 'Take-offs', 'associated pairs'])
+        plt.ylabel('nr of associated landings with take offs')
+        plt.show()
+
+# PLot sub heatmaps with different area_boundary options to see if the landing point results change
+    # --> 4 subplots from 0.01 to 0.04 m
+    def plotHeatmapLandingPointBoundaryAssociationTest(self):
+        volume_matrix = self.getMatrixNormilizingVolume()
+
+        boundaries = [0.01, 0.02, 0.03, 0.04]
+        titles = ['1 cm', '2 cm', '3 cm', '4 cm']
+
+        # plot matrices
+        fig, axs = plt.subplots(2, 2)
+        axs = axs.flatten()
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+
+        for i, ax in enumerate(axs):
+            density_matrix = self.getMatrixLandingPoints(area_boundary=boundaries[i]) / volume_matrix
+            heatmap = ax.pcolormesh(X, Y, density_matrix, cmap=custom_cmap)
+            ax.set_title(titles[i])
+            ax.set_xlabel('r')
+            ax.set_ylabel('z')
+            ax.set_facecolor('white')
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
+            fig.colorbar(heatmap, ax=ax, fraction=0.065, pad=0.13, label='Density (points/m$^3$)')
+            ax.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+            ax.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+            ax.set_xlim(0, 0.3)
+            ax.set_ylim(-0.45, 0.1)
+            ax.set_aspect('equal', adjustable='box')
+
+        fig.suptitle('Heatmaps with different width boundary around the trap \nLanding points per volume')
+        fig.tight_layout()
+        plt.show()
+
+
+# PLot sub heatmaps with different area_boundary options to see if the resting points result change
+
+
+
+# PLot sub heatmaps with different area_boundary options to see if the resting time result change
+
 

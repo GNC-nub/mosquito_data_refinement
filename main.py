@@ -34,7 +34,7 @@ trial = ClassMosquito.Trial(1)
 # Initializing the highlighted track
 track = ClassMosquito.Track(1, 2)
 
-
+'''
 #  Basic dataset analysis
 
 #  --> Amount and percentage of landing mosquitoes and captured mosquitoes
@@ -154,9 +154,6 @@ trial.plotTrackLandingAgainTrial(8)
 # Capture after landing visualisation
 trial.plotTrackLandingToCaptureTrial(1)
 
-# Sensitivity / association boxplot
-dataset.plotBoxplotRadiusAssociations()  # Landing -- take-off pairing radius
-dataset.plotBoxplotCountLandingTakeOffAccosiation()  # Landing -- take-off pairing counting
 
 # Heatmap  Landing again
 dataset.plotHeatmapLandingAgainProbability()
@@ -168,4 +165,12 @@ dataset.plotHeatmapLandingToCaptureProbability()
 percentage_land_again = dataset.calculatingPercentagesLandingAgain()
 percentage_land_to_capture = dataset.calculatingPercentagesLandingToCapture()
 print(f'\nPercentage of take offs that land again is {round(percentage_land_again, 2)} %\nPercentage of take offs that lead to capture {round(percentage_land_to_capture, 2)} %')
+'''
 
+# association tests #
+# Boxplots
+dataset.plotBoxplotRadiusAssociations()  # Landing -- take-off pairing radius
+dataset.plotBoxplotCountLandingTakeOffAccosiation()  # Landing -- take-off pairing counting
+
+# PLot subplots heatmaps with different area_boundary options to see if the results change --> 0.01 - 0.04 m
+dataset.plotHeatmapLandingPointBoundaryAssociationTest()
