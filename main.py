@@ -165,7 +165,7 @@ dataset.plotHeatmapLandingToCaptureProbability()
 percentage_land_again = dataset.calculatingPercentagesLandingAgain()
 percentage_land_to_capture = dataset.calculatingPercentagesLandingToCapture()
 print(f'\nPercentage of take offs that land again is {round(percentage_land_again, 2)} %\nPercentage of take offs that lead to capture {round(percentage_land_to_capture, 2)} %')
-'''
+
 
 # association tests #
 # Boxplots
@@ -173,4 +173,10 @@ dataset.plotBoxplotRadiusAssociations()  # Landing -- take-off pairing radius
 dataset.plotBoxplotCountLandingTakeOffAccosiation()  # Landing -- take-off pairing counting
 
 # PLot subplots heatmaps with different area_boundary options to see if the results change --> 0.01 - 0.04 m
-dataset.plotHeatmapLandingPointBoundaryAssociationTest()
+dataset.plotHeatmapLandingPointsBoundaryAssociationTest()
+
+dataset.plotHeatmapRestingPointsBoundaryAssociationTest()
+dataset.plotHeatmapRestingTimesBoundaryAssociationTest()
+'''
+dataset.plotHeatmapLandingToCaptureProbabilityAssociationTest()
+dataset.plotHeatmapLandingAgainProbabilityAssociationTest()

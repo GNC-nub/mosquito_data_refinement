@@ -137,21 +137,21 @@ class Trial:
 
 # Initializes self.landingpoints, aka a list of all the landing point in a trial
     # --> [ [x, y, z, time], exe...]
-    def initializeLandingPoints(self, boundary = 0.03):
+    def initializeLandingPoints(self, area_boundary = 0.03):
         landingpoints_list = []
         for coordinate in self.lastCoordinatesTrial():
             header, [x, y, z, time] = coordinate
-            if landing_area(x, y, z, boundary = boundary) == True:
+            if landing_area(x, y, z, boundary = area_boundary) == True:
                 landingpoints_list.append([x, y, z, time])
         self.landingpoints = landingpoints_list
 
 # Initializes self.take_off_points, a list all the take-off point in a trial
     # --> [ [x, y, z, time], exe...]
-    def initializeTakeOffPoints(self, boundary = 0.03):
+    def initializeTakeOffPoints(self, area_boundary = 0.03):
         take_off_points = []
         for coordinate in self.firstCoordinatesTrial():
             header, [x, y, z, time] = coordinate
-            if landing_area(x, y, z, boundary = boundary) == True:
+            if landing_area(x, y, z, boundary = area_boundary) == True:
                 take_off_points.append([x, y, z, time])
         self.take_off_points = take_off_points
 
@@ -229,9 +229,9 @@ class Trial:
 # Generates the most likely resting pairs in a dictionary, with lists of the resting time
 # and the associated resting spots in a trial.
         # --> pairs[i_land] = i_takeoff (dictionary), [resting_times], [resting_points]
-    def getRestingPairsTimesPoints(self, threshold = 0.02):
-        self.initializeLandingPoints()
-        self.initializeTakeOffPoints()
+    def getRestingPairsTimesPoints(self, threshold = 0.02, area_boundary = 0.03):
+        self.initializeLandingPoints(area_boundary=area_boundary)
+        self.initializeTakeOffPoints(area_boundary=area_boundary)
         potential_pairs = []
 
         for i_land, landing_point in enumerate(self.landingpoints):
@@ -269,20 +269,20 @@ class Trial:
 
 # Only get the resting time list of a trial
     # --> [resting_times]
-    def getRestingTimeTrial(self, radius = 0.02):
-        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius)
+    def getRestingTimeTrial(self, radius = 0.02, area_boundary = 0.03):
+        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius, area_boundary=area_boundary)
         return resting_times
 
 # Only get the resting points list of a trial
     # --> [resting_points]
-    def getRestingPointsTrial(self, radius = 0.02):
-        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius)
+    def getRestingPointsTrial(self, radius = 0.02, area_boundary = 0.03):
+        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius, area_boundary=area_boundary)
         return resting_points
 
 # Only get the resting pairs dictionary of a trial     !NOT IN USE!
     # --> pairs[i_land] = i_takeoff (dictionary)
-    def getRestingPairsTrial(self, radius =0.02):
-        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius)
+    def getRestingPairsTrial(self, radius =0.02, area_boundary = 0.03):
+        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius, area_boundary = area_boundary)
         return pairs
 
 # Get the total number of associated (landing -- take-off) pairs of a trial
@@ -379,26 +379,26 @@ class Trial:
 
 # Get list of coordinates that begin in take-ff and end in capture of a trial
     # --> [[x, y, z], exe... ]
-    def getCoordinatesLandingToCapture(self):
+    def getCoordinatesLandingToCapture(self, area_boundary = 0.03):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
         take_off_coordinates = []
         for track in self.coordinate_list_trial:
             header, x, y, z, time = track
-            if landing_area(x[0], y[0], z[0]) == True and capturing_area(x[-1], y[-1], z[-1]) == True:
+            if landing_area(x[0], y[0], z[0], boundary = area_boundary) == True and capturing_area(x[-1], y[-1], z[-1], boundary= area_boundary) == True:
                 take_off_coordinates.append([x[0], y[0], z[0]])
         return take_off_coordinates
 
 # Get list of coordinates that begin and end in landing of a trial
 # Landing again
     # --> [[x, y, z], exe... ]
-    def getCoordinatesLandingAgain(self):
+    def getCoordinatesLandingAgain(self, area_boundary = 0.03):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
         take_off_coordinates = []
         for track in self.coordinate_list_trial:
             header, x, y, z, time = track
-            if landing_area(x[0], y[0], z[0]) == True and landing_area(x[-1], y[-1], z[-1]) == True:
+            if landing_area(x[0], y[0], z[0], boundary = area_boundary) == True and landing_area(x[-1], y[-1], z[-1], boundary = area_boundary) == True:
                 take_off_coordinates.append([x[0], y[0], z[0]])
         return take_off_coordinates
 
@@ -785,7 +785,7 @@ class Dataset:
         r_list = []
         z_list = []
         for trial_object in self.trialobjects:
-            trial_object.initializeLandingPoints(boundary = area_boundary)
+            trial_object.initializeLandingPoints(area_boundary=area_boundary)
             for coordinate in trial_object.landingpoints:
                 x, y, z, time = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
@@ -795,13 +795,13 @@ class Dataset:
 
 # Get take off coordinates in 2D in two lists: r and z
     # ---> list r , list z
-    def getTakeOffPointsTheta(self):
+    def getTakeOffPointsTheta(self, area_boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
         z_list = []
         for trial_object in self.trialobjects:
-            trial_object.initializeTakeOffPoints()
+            trial_object.initializeTakeOffPoints(area_boundary= area_boundary)
             for coordinate in trial_object.take_off_points:
                 x, y, z, time = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
@@ -1262,8 +1262,8 @@ class Dataset:
 
 # Get the matrix of the take-off points
     # --> matrix
-    def getMatrixTakeOffPoints(self):
-        r, z = self.getTakeOffPointsTheta()
+    def getMatrixTakeOffPoints(self, area_boundary = 0.03):
+        r, z = self.getTakeOffPointsTheta(area_boundary = area_boundary)
         takeoffpoints_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix))
         takeoffpoints_count_matrix = takeoffpoints_count_matrix.T
@@ -1282,13 +1282,13 @@ class Dataset:
 
 # Get the matrix of the resting times, with a possibility to change the upper/lower time boundary
     # --> 2 matrices: resting_time_matrix_np, resting_time_count_matrix_np
-    def getMatrixRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500):
+    def getMatrixRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500, area_boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
         for trial_object in self.trialobjects:
-            resting_times = trial_object.getRestingTimeTrial()
-            points = trial_object.getRestingPointsTrial()
+            resting_times = trial_object.getRestingTimeTrial(area_boundary=area_boundary)
+            points = trial_object.getRestingPointsTrial(area_boundary=area_boundary)
             for i, resting_time in enumerate(resting_times):
                 if lower_time_boundary < resting_time < upper_time_boundary:
                     w_list.append(resting_time)
@@ -1340,12 +1340,12 @@ class Dataset:
 
 # Get the matrix of the probability that a mosquito that takes-off in a certain space ends in capture.
     # --> matrix
-    def getMatrixCaptureProbability(self):
+    def getMatrixCaptureProbability(self, area_boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
         for trial_object in self.trialobjects:
-            coordinates = trial_object.getCoordinatesLandingToCapture()
+            coordinates = trial_object.getCoordinatesLandingToCapture(area_boundary = area_boundary)
             for coordinate in coordinates:
                 x, y, z = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
@@ -1359,12 +1359,12 @@ class Dataset:
 
 # Get the matrix of the probability that a mosquito that takes-off in a certain space lands again.
     # --> matrix
-    def getMatrixLandingAgainProbability(self):
+    def getMatrixLandingAgainProbability(self, area_boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
         for trial_object in self.trialobjects:
-            coordinates = trial_object.getCoordinatesLandingAgain()
+            coordinates = trial_object.getCoordinatesLandingAgain(area_boundary=area_boundary)
             for coordinate in coordinates:
                 x, y, z = coordinate
                 r =  np.sqrt(x ** 2 + y ** 2)
@@ -1600,6 +1600,7 @@ class Dataset:
         plt.show()
 
 
+
 # Sensitivity analysis / association analysis #
 
 # PLot a boxplot differentiating between different possible radius and the number of landing--take-off associations
@@ -1639,8 +1640,8 @@ class Dataset:
         plt.show()
 
 # PLot sub heatmaps with different area_boundary options to see if the landing point results change
-    # --> 4 subplots from 0.01 to 0.04 m
-    def plotHeatmapLandingPointBoundaryAssociationTest(self):
+    # --> 4 subplots from 0.01 to 0.04 m width
+    def plotHeatmapLandingPointsBoundaryAssociationTest(self):
         volume_matrix = self.getMatrixNormilizingVolume()
 
         boundaries = [0.01, 0.02, 0.03, 0.04]
@@ -1674,9 +1675,150 @@ class Dataset:
 
 
 # PLot sub heatmaps with different area_boundary options to see if the resting points result change
+    # --> 4 subplots from 0.01 to 0.04 m width
+    def plotHeatmapRestingPointsBoundaryAssociationTest(self, lower_time_boundary = 0, upper_time_boundary = 1500):
+        volume_matrix = self.getMatrixNormilizingVolume()
 
+        boundaries = [0.01, 0.02, 0.03, 0.04]
+        titles = ['1 cm', '2 cm', '3 cm', '4 cm']
 
+        # plot matrices
+        fig, axs = plt.subplots(2, 2)
+        axs = axs.flatten()
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+
+        for i, ax in enumerate(axs):
+            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary, area_boundary=boundaries[i])
+            density_matrix =  resting_time_count_matrix_np/ volume_matrix
+            heatmap = ax.pcolormesh(X, Y, density_matrix, cmap=custom_cmap)
+            ax.set_title(titles[i])
+            ax.set_xlabel('r')
+            ax.set_ylabel('z')
+            ax.set_facecolor('white')
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
+            fig.colorbar(heatmap, ax=ax, fraction=0.065, pad=0.13, label='Density (points/m$^3$)')
+            ax.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+            ax.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+            ax.set_xlim(0, 0.3)
+            ax.set_ylim(-0.45, 0.1)
+            ax.set_aspect('equal', adjustable='box')
+
+        fig.suptitle('Heatmaps with different width boundary around the trap \nResting points per volume')
+        fig.tight_layout()
+        plt.show()
 
 # PLot sub heatmaps with different area_boundary options to see if the resting time result change
 
+    def plotHeatmapRestingTimesBoundaryAssociationTest(self, lower_time_boundary = 0, upper_time_boundary = 1500):
+        volume_matrix = self.getMatrixNormilizingVolume()
 
+        boundaries = [0.01, 0.02, 0.03, 0.04]
+        titles = ['1 cm', '2 cm', '3 cm', '4 cm']
+
+        # plot matrices
+        fig, axs = plt.subplots(2, 2)
+        axs = axs.flatten()
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+
+        for i, ax in enumerate(axs):
+            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary,area_boundary=boundaries[i])
+            resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix_np, nan=0.0)
+            resting_time_matrix_norm = resting_time_matrix_np / volume_matrix
+            resting_time_matrix_average = np.divide(resting_time_matrix_norm, resting_time_count_matrix,
+                                                    where=resting_time_count_matrix != 0)
+            heatmap = ax.pcolormesh(X, Y, resting_time_matrix_average, cmap=custom_cmap)
+            ax.set_title(titles[i])
+            ax.set_xlabel('r')
+            ax.set_ylabel('z')
+            ax.set_facecolor('white')
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
+            fig.colorbar(heatmap, ax=ax, fraction=0.065, pad=0.13, label='Density (points/m$^3$)')
+            ax.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+            ax.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+            ax.set_xlim(0, 0.3)
+            ax.set_ylim(-0.45, 0.1)
+            ax.set_aspect('equal', adjustable='box')
+
+        fig.suptitle('Heatmaps with different width boundary around the trap \nResting times per volume')
+        fig.tight_layout()
+        plt.show()
+
+# PLot sub heatmaps with different area_boundary options to see if the probability to land again results change
+    def plotHeatmapLandingToCaptureProbabilityAssociationTest(self):
+        volume_matrix = self.getMatrixNormilizingVolume()
+        boundaries = [0.01, 0.02, 0.03, 0.04]
+        titles = ['1 cm', '2 cm', '3 cm', '4 cm']
+
+        # plot matrices
+        fig, axs = plt.subplots(2, 2)
+        axs = axs.flatten()
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+
+        for i, ax in enumerate(axs):
+            captured_coord_matrix = self.getMatrixCaptureProbability(area_boundary=boundaries[i])
+            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(area_boundary=boundaries[i])
+
+            matrix_norm = captured_coord_matrix / volume_matrix
+            matrix_average_norm = np.divide(matrix_norm, takeoffpoints_count_matrix,
+                                            where=takeoffpoints_count_matrix != 0)
+            matrix_average_norm /= matrix_average_norm.max()  # the max value stays 1. (so it keeps being a probability)
+            heatmap = ax.pcolormesh(X, Y, matrix_average_norm, cmap=custom_cmap)
+            ax.set_title(titles[i])
+            ax.set_xlabel('r')
+            ax.set_ylabel('z')
+            ax.set_facecolor('white')
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
+            fig.colorbar(heatmap, ax=ax, fraction=0.065, pad=0.13, label='Probability')
+            ax.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+            ax.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+            ax.set_xlim(0, 0.3)
+            ax.set_ylim(-0.45, 0.1)
+            ax.set_aspect('equal', adjustable='box')
+
+        fig.suptitle('Heatmaps with different width boundary around the trap \nProbability of a take-off to end in capture')
+        fig.tight_layout()
+        plt.show()
+
+
+# PLot sub heatmaps with different area_boundary options to see if the probability to get captured after take-off change
+    def plotHeatmapLandingAgainProbabilityAssociationTest(self):
+        volume_matrix = self.getMatrixNormilizingVolume()
+        boundaries = [0.01, 0.02, 0.03, 0.04]
+        titles = ['1 cm', '2 cm', '3 cm', '4 cm']
+
+        # plot matrices
+        fig, axs = plt.subplots(2, 2)
+        axs = axs.flatten()
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+        for i, ax in enumerate(axs):
+            landing_again_matrix = self.getMatrixLandingAgainProbability(area_boundary=boundaries[i])
+            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(area_boundary=boundaries[i])
+            matrix_norm = landing_again_matrix / volume_matrix
+            matrix_average_norm = np.divide(matrix_norm, takeoffpoints_count_matrix,
+                                            where=takeoffpoints_count_matrix != 0)
+            matrix_average_norm /= matrix_average_norm.max()  # the max value stays 1. (so it keeps being a probaility)
+            heatmap = ax.pcolormesh(X, Y, matrix_average_norm, cmap=custom_cmap)
+            ax.set_title(titles[i])
+            ax.set_xlabel('r')
+            ax.set_ylabel('z')
+            ax.set_facecolor('white')
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
+            fig.colorbar(heatmap, ax=ax, fraction=0.065, pad=0.13, label='Probability')
+            ax.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+            ax.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+            ax.set_xlim(0, 0.3)
+            ax.set_ylim(-0.45, 0.1)
+            ax.set_aspect('equal', adjustable='box')
+
+        fig.suptitle(
+            'Heatmaps with different width boundary around the trap \nProbability of a take-off to land again')
+        fig.tight_layout()
+        plt.show()
