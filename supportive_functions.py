@@ -78,23 +78,47 @@ import h5py
 from loading_matlab_file import path_matlab_file1, path_csv_folder1
 basemap_csv_path  = os.path.join(path_csv_folder1,'database_csv')
 
-def landing_area(x, y, z, boundary=0.03, trap_height = 0.388, trap_radius = 0.15, inlet_height = 0.083, inlet_radius = 0.055):
-    distance = np.sqrt((x**2)+(y**2))
+
+def landing_area_side(x, y, z, boundary=0.03, trap_height=0.388, trap_radius=0.15, inlet_height=0.083,
+                      inlet_radius=0.055):
+    r = np.sqrt((x ** 2) + (y ** 2))
     landing = False
 
+    # landing_area of the inlet
     if -boundary < z < 0:
-        if inlet_radius < distance < inlet_radius + boundary:
+        if inlet_radius < r < inlet_radius + boundary:
             landing = True
     elif -(inlet_height - boundary) < z < -boundary:
-        if inlet_radius - boundary < distance < inlet_radius + boundary:
+        if inlet_radius - boundary < r < inlet_radius + boundary:
             landing = True
-    elif -(inlet_height + boundary) < z < -(inlet_height - boundary):
-        if inlet_radius - boundary < distance < trap_radius + boundary:
-            landing = True
+    # landing_area of the body side
     elif -trap_height < z < -(inlet_height + boundary):
-        if trap_radius - boundary < distance < trap_radius + boundary:
+        if trap_radius - boundary < r < trap_radius + boundary:
             landing = True
     return landing
+
+
+def landing_area_top(x, y, z, boundary=0.03, trap_radius=0.15, inlet_height=0.083,
+                     inlet_radius=0.055):
+    r = np.sqrt((x ** 2) + (y ** 2))
+    landing = False
+    if -(inlet_height + boundary) < z < -(inlet_height - boundary):
+        if inlet_radius - boundary < r < trap_radius + boundary:
+            landing = True
+    return landing
+
+def landing_area(x, y, z, specific_area = 'whole', boundary=0.03):
+    boolean = False
+    if specific_area == 'whole':
+        if landing_area_top(x, y, z, boundary=boundary) or landing_area_side(x, y, z, boundary=boundary):
+            boolean = True
+    elif specific_area == 'top':
+        if landing_area_top(x, y, z, boundary=boundary):
+            boolean = True
+    elif specific_area == 'side':
+        if landing_area_side(x, y, z, boundary=boundary):
+            boolean = True
+    return boolean
 
 def capturing_area(x, y, z, boundary = 0.03, inlet_radius = 0.055):
     distance = np.sqrt((x**2)+(y**2))
@@ -106,6 +130,7 @@ def capturing_area(x, y, z, boundary = 0.03, inlet_radius = 0.055):
         if distance < inlet_radius:
             capture = True
     return capture
+
 
 
 def accessing_track(trial, track):
