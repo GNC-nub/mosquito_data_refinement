@@ -35,7 +35,7 @@ trial = ClassMosquito.Trial(trial_number)
 # Initializing the highlighted track
 track = ClassMosquito.Track(trial_number, track_number)
 
-
+'''
 #  Basic dataset analysis
 
 #  --> Amount and percentage of landing mosquitoes and captured mosquitoes
@@ -67,12 +67,14 @@ track.plot2DTrack()  # 2D
 trial.plotTrial()  # 3D
 trial.plot2DTrial()  # 2D
 
-
+'''
 # plot landing
+print(track.getHoppingCoordinatesTrack())
 print(f'All the resting times of trial {trial_number}, track {track_number}: {track.getRestingTimeTrack(boundary = 0.02)}')
+print(track.getLandigPointsTrack(boundary = 0.02))
 track.plotLandingTrack(boundary=0.02)
 track.plotLanding2DTrack()
-
+quit()
 
 # Boxplot statistics to see significant differences  (significance in terminal)
 
