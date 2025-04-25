@@ -79,6 +79,8 @@ from loading_matlab_file import path_matlab_file1, path_csv_folder1
 basemap_csv_path  = os.path.join(path_csv_folder1,'database_csv')
 
 
+# Evaluates if the x, y, z input is within the landing area at the side of the trap.
+# (Both the side of the body and the side of the inlet)
 def landing_area_side(x, y, z, boundary=0.03, trap_height=0.388, trap_radius=0.15, inlet_height=0.083,
                       inlet_radius=0.055):
     r = np.sqrt((x ** 2) + (y ** 2))
@@ -97,7 +99,7 @@ def landing_area_side(x, y, z, boundary=0.03, trap_height=0.388, trap_radius=0.1
             landing = True
     return landing
 
-
+# Evaluates if the x, y, z input is within the landing area at the top of the body of the trap.
 def landing_area_top(x, y, z, boundary=0.03, trap_radius=0.15, inlet_height=0.083,
                      inlet_radius=0.055):
     r = np.sqrt((x ** 2) + (y ** 2))
@@ -107,6 +109,11 @@ def landing_area_top(x, y, z, boundary=0.03, trap_radius=0.15, inlet_height=0.08
             landing = True
     return landing
 
+# Useable function in the ClassMosquito.py file to see if a point is within the landing_area
+    # --> specific_area specifications:
+                #  'whole' = within the whole landing_area
+                #  'side' = witihin the side part of the inlet or the body
+                #  'top' = within the top part of the body
 def landing_area(x, y, z, specific_area = 'whole', boundary=0.03):
     boolean = False
     if specific_area == 'whole':

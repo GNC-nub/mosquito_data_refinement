@@ -34,7 +34,7 @@ trial = ClassMosquito.Trial(1)
 # Initializing the highlighted track
 track = ClassMosquito.Track(1, 2)
 
-'''
+
 #  Basic dataset analysis
 
 #  --> Amount and percentage of landing mosquitoes and captured mosquitoes
@@ -177,6 +177,6 @@ dataset.plotHeatmapLandingPointsBoundaryAssociationTest()
 
 dataset.plotHeatmapRestingPointsBoundaryAssociationTest()
 dataset.plotHeatmapRestingTimesBoundaryAssociationTest()
-'''
+
 dataset.plotHeatmapLandingToCaptureProbabilityAssociationTest()
 dataset.plotHeatmapLandingAgainProbabilityAssociationTest()
