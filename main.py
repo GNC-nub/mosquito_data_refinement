@@ -26,13 +26,14 @@ import ClassMosquito
 
 # Run loading_matlab_file.py first!
 
-
+trial_number = 1
+track_number = 6
 # Initializing the dataset
 dataset = ClassMosquito.Dataset()
 # Initializing the highlighted trial
-trial = ClassMosquito.Trial(1)
+trial = ClassMosquito.Trial(trial_number)
 # Initializing the highlighted track
-track = ClassMosquito.Track(1, 2)
+track = ClassMosquito.Track(trial_number, track_number)
 
 
 #  Basic dataset analysis
@@ -60,11 +61,17 @@ dataset.plotViolinStartEndTimes()
 
 # Single track plotting
 track.plotTrack()  # 3D
-track.plotTheta2DTrack()  # 2D
+track.plot2DTrack()  # 2D
 
 # single trial plotting
 trial.plotTrial()  # 3D
 trial.plot2DTrial()  # 2D
+
+
+# plot landing
+print(f'All the resting times of trial {trial_number}, track {track_number}: {track.getRestingTimeTrack(boundary = 0.02)}')
+track.plotLandingTrack(boundary=0.02)
+track.plotLanding2DTrack()
 
 
 # Boxplot statistics to see significant differences  (significance in terminal)

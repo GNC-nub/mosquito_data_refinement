@@ -99,7 +99,7 @@ class Track:
 
         plt.show()
 
-    def plotTheta2DTrack(self):
+    def plot2DTrack(self):
         r = []
         last_r, last_z = np.sqrt(self.x[-1]**2 + self.y[-1]**2), self.z[-1]
         for i in range(len(self.x)):
@@ -117,6 +117,73 @@ class Track:
         plt.title('2D (r, z) plot of a single track')
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
         plt.show()
+
+    def plotLandingTrack(self, boundary = 0.02):
+        x, y, z, t = self.getTrack()
+        ax = plt.axes(projection='3d')
+        for i in range(1, len(x)):
+            if landing_area(x[i], y[i], z[i], boundary = boundary):
+                ax.plot([x[i-1], x[i]], [y[i-1], y[i]], [z[i-1], z[i]], color='r')
+            else:
+                ax.plot([x[i-1], x[i]], [y[i-1], y[i]], [z[i-1], z[i]], color='g')
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.set_title('3D (x, y, z) plot of a single track')
+
+        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
+        ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
+        ax.plot_surface(x_grid_inlet, y_grid_inlet, z_grid_inlet, alpha=0.5, color='b')
+        ax.set_aspect('equal', adjustable='box')
+        plt.show()
+
+    def plotLanding2DTrack(self, boundary = 0.02):
+        x, y, z, t = self.getTrack()
+        x = np.array(x)
+        y = np.array(y)
+        r = np.sqrt(x ** 2 + y ** 2)
+        for i in range(1, len(x)):
+            if landing_area(x[i], y[i], z[i], boundary = boundary):
+                print(f'Trial {self.trial_num}, track {self.track_num} lands at {t[i]}')
+                plt.plot([r[i-1], r[i]], [z[i-1], z[i]], color='r')
+            else:
+                plt.plot([r[i-1], r[i]], [z[i-1], z[i]], color='g')
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+        plt.xlim(0, 0.8)
+        plt.ylim(-0.5, 0.5)
+        plt.xlabel('r')
+        plt.ylabel('z')
+        plt.title('2D (r, z) plot of a single track')
+        plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
+        plt.show()
+
+    def getRestingTimeTrack(self, boundary = 0.02):
+        x, y, z, t = self.getTrack()
+        in_run = False
+        start_time = None
+        resting_times = []
+        for i in range(len(x)):
+            if landing_area(x[i], y[i], z[i], boundary= boundary):
+                if not in_run:
+                    # Start time of a landing
+                    in_run = True
+                    start_time = t[i]
+            else:
+                if in_run:
+                    # end time of a landing
+                    in_run = False
+                    end_time = t[i - 1]
+                    resting_times.append(end_time - start_time)
+
+        if in_run:
+            resting_times.append(t[-1] - start_time)
+            print('Ends in landing')
+        if landing_area(x[0], y[0], z[0], boundary = boundary):
+            print('This is a take-off')
+        print(f'Last time coordinate is {t[-1]}')
+        return resting_times
 
 class Trial:
     def __init__(self, trial_num):  # if you want to load a track, fill in both trial and track, otherwise only whole trial
