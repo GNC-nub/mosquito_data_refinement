@@ -139,6 +139,7 @@ def capturing_area(x, y, z, boundary = 0.03, inlet_radius = 0.055):
     return capture
 
 
+# To find the distance to a cylinder (the trap is  two cylinders tacked ontop of each other)
 def distance_to_cylinder_surface(point, cylinder):
     x, y, z, t = point
     radius, z_min, z_max = cylinder
@@ -152,7 +153,8 @@ def distance_to_cylinder_surface(point, cylinder):
     combined_distance = np.sqrt(radial_distance**2 + vertical_distance**2)
     return combined_distance
 
-def nearest_neighbour_to_trap_surface(x, y, z, t):
+# A nearest neighbor search to find the closest point to the given cylinders that make up the trap.
+def nearest_neighbor_to_trap_surface(x, y, z, t):
     min_dist = 100000
     closest_point = None
     cylinder_body = (0.15, -0.38, -0.083)  # radius = 0.15, z_min = -0.38, z_max = -0.083
@@ -168,11 +170,6 @@ def nearest_neighbour_to_trap_surface(x, y, z, t):
             min_dist = point_dist
             closest_point = point
     return closest_point
-
-
-
-
-
 
 
 

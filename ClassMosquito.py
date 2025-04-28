@@ -81,7 +81,7 @@ class Track:
         landing_points = []
         for hop in hoppings:
             x, y, z, t = hop
-            landing_point = nearest_neighbour_to_trap_surface(x, y, z, t)
+            landing_point = nearest_neighbor_to_trap_surface(x, y, z, t)
             landing_points.append(landing_point)
         return landing_points
 
