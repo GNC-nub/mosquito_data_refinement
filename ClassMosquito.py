@@ -221,11 +221,36 @@ class Trial:
         self.total_mosquitos_per_trial = 50
         self.trial_num = trial_num
         self.coordinate_list_trial = None
-        self.condition = accessing_extra_info('Condition')[trial_num -1]
+        if trial_num < 59:  # to exclude tria 59
+            self.condition = accessing_extra_info('Condition')[trial_num -1]
+        else:
+            self.condition = accessing_extra_info('Condition')[trial_num]
         self.header = f'Trial_{trial_num + 1}'
         self.landingpoints = None
+        self.ending_landingpoints = None
         self.take_off_points = None
         self.num_tracks = None
+        self.track_objects = None
+        self.hoppings = None
+
+# All the coordinates of one trial
+    # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ] , exe... ]
+    def getTrial(self):
+        if self.coordinate_list_trial == None:
+            self.initiateCoordinateList()
+        return self.coordinate_list_trial
+
+# Creating objects for all the given tracks.
+    def getTrackObjects(self):
+        object_array = []
+        trial = self.getTrial()
+        for track in trial:
+            header, x, y, z, t = track
+            track_num = int(header.split('_')[-1])
+            obj = Track(trial_num=self.trial_num, track_num=track_num)
+            object_array.append(obj)
+        return object_array
+
 
 # Initializes self.coordinate_list_trial, aka a list of all the point in a trial
     # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ], exe... ]
@@ -235,17 +260,27 @@ class Trial:
 
 # Initializes self.landingpoints, aka a list of all the landing point in a trial
     # --> [ [x, y, z, time], exe...]
-    def initializeLandingPoints(self, area_boundary = 0.03):
+    def initializeLandingPoints(self, area_boundary=0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
+        landingpoints = []
+        for track_object in self.track_objects:
+            landingpoints.append(track_object.getLandingPointsTrack(boundary=area_boundary))
+        self.landingpoints = landingpoints
+
+# Initializes seld.ending_landingpoints, all the trials that end in landing have this landingspot.
+    def initializeEndLandingPoints(self, area_boundary = 0.02):
         landingpoints_list = []
         for coordinate in self.lastCoordinatesTrial():
             header, [x, y, z, time] = coordinate
-            if landing_area(x, y, z, boundary = area_boundary) == True:
+            if landing_area(x, y, z, boundary=area_boundary) == True:
                 landingpoints_list.append([x, y, z, time])
-        self.landingpoints = landingpoints_list
+        self.ending_landingpoints = landingpoints_list
+
 
 # Initializes self.take_off_points, a list all the take-off point in a trial
     # --> [ [x, y, z, time], exe...]
-    def initializeTakeOffPoints(self, area_boundary = 0.03):
+    def initializeTakeOffPoints(self, area_boundary = 0.02):
         take_off_points = []
         for coordinate in self.firstCoordinatesTrial():
             header, [x, y, z, time] = coordinate
@@ -253,14 +288,17 @@ class Trial:
                 take_off_points.append([x, y, z, time])
         self.take_off_points = take_off_points
 
-# All the coordinates of one trial
-    # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ] , exe... ]
-    def getTrial(self):
-        if self.coordinate_list_trial == None:
-            self.initiateCoordinateList()
-        return self.coordinate_list_trial
+    def initializeHoppingCoordinatesTrial(self, boundary = 0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
+        hoppings_trial = []
+        for track_object in self.track_objects:
+            hoppings_track = track_object.getHoppingCoordinatesTrack(boundary=boundary)
+            for hop in hoppings_track:
+                hoppings_trial.append(hop)
+        self.hoppings = hoppings_trial
 
-        # first/last coordinates
+# First/last coordinates #
 
 # List of last coordinates of a trial
     # --> [ [ header, [x, y, z, time] ], exe... ]
@@ -323,6 +361,27 @@ class Trial:
 
 
 # Resting time #
+# Not tested!!!!!
+def getRestingTimesHoppings(self, boundary = 0.02):
+    if self.track_objects == None:
+        self.track_objects = self.getTrackObjects()
+    resting_hoppings = []
+    resting_landing_times = []
+    for track_object in self.track_objects:
+        resting_hopping = track_object.getRestingTimeTrack(boundary=boundary)
+        x, y, z, t = track_object.lastCoordinatesTrack()
+        if landing_area(x, y, z, boundary=boundary):
+            removed_time = resting_hopping.pop()
+            resting_landing_times.append(removed_time)
+        for hop in resting_hopping:
+            resting_hoppings.append(hop)
+    return resting_hoppings, resting_landing_times
+# not checkete!!!!
+
+
+
+
+
 
 # Generates the most likely resting pairs in a dictionary, with lists of the resting time
 # and the associated resting spots in a trial.

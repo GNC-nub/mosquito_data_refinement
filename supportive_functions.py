@@ -188,14 +188,15 @@ def accessing_track(trial, track):
                 string = string.strip('()')
                 string = string.split(',')
                 for value in string:
-                    if i == 1:
-                        time_coordinates.append(float(value))
-                    if i == 2:
-                        x_coordinates.append(float(value))
-                    if i == 3:
-                        y_coordinates.append(float(value))
-                    if i == 4:
-                        z_coordinates.append(float(value))
+                    if value != '':
+                        if i == 1:
+                            time_coordinates.append(float(value))
+                        if i == 2:
+                            x_coordinates.append(float(value))
+                        if i == 3:
+                            y_coordinates.append(float(value))
+                        if i == 4:
+                            z_coordinates.append(float(value))
             msg = [x_coordinates, y_coordinates, z_coordinates, time_coordinates]
     else:
         msg = 'Error: This file does not exist.'
