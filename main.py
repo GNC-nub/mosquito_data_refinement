@@ -27,7 +27,8 @@ import ClassMosquito
 # Run loading_matlab_file.py first!
 
 trial_number = 1
-track_number = 6
+track_number = 25
+landing_boundary = 0.02
 # Initializing the dataset
 dataset = ClassMosquito.Dataset()
 # Initializing the highlighted trial
@@ -70,10 +71,10 @@ trial.plot2DTrial()  # 2D
 '''
 # plot landing
 print(track.getHoppingCoordinatesTrack())
-print(f'All the resting times of trial {trial_number}, track {track_number}: {track.getRestingTimeTrack(boundary = 0.02)}')
-print(track.getLandigPointsTrack(boundary = 0.02))
-track.plotLandingTrack(boundary=0.02)
-track.plotLanding2DTrack()
+print(f'All the resting times of trial {trial_number}, track {track_number}: {track.getRestingTimeTrack(boundary = landing_boundary)}')
+print(track.getLandingPointsTrack(boundary = landing_boundary))
+track.plotLandingTrack(boundary=landing_boundary)
+track.plotLanding2DTrack(boundary = landing_boundary)
 quit()
 
 # Boxplot statistics to see significant differences  (significance in terminal)

@@ -139,6 +139,44 @@ def capturing_area(x, y, z, boundary = 0.03, inlet_radius = 0.055):
     return capture
 
 
+def distance_to_cylinder_surface(point, cylinder):
+    x, y, z, t = point
+    radius, z_min, z_max = cylinder
+    radial_distance = np.abs(np.sqrt(x **2 + y **2) - radius) # closest to the side of the trap, not to the z-axis
+
+    if z_min <= z <= z_max:
+        vertical_distance = 0
+    else:
+        vertical_distance = min(np.abs(z- z_min), np.abs(z - z_max))
+
+    combined_distance = np.sqrt(radial_distance**2 + vertical_distance**2)
+    return combined_distance
+
+def nearest_neighbour_to_trap_surface(x, y, z, t):
+    min_dist = 100000
+    closest_point = None
+    cylinder_body = (0.15, -0.38, -0.083)  # radius = 0.15, z_min = -0.38, z_max = -0.083
+    cylinder_inlet = (0.055, -0.083, 0)  # radius = 0.055, z_min = -0.083, z_max = 0
+    cylinders = [cylinder_body, cylinder_inlet]
+    for i in range(len(x)):
+        point = x[i], y[i], z[i], t[i]
+        distance_to_both_cylinders = []
+        for cylinder in cylinders:
+            distance_to_both_cylinders.append(distance_to_cylinder_surface(point, cylinder))
+        point_dist = min(distance_to_both_cylinders)
+        if point_dist < min_dist:
+            min_dist = point_dist
+            closest_point = point
+    return closest_point
+
+
+
+
+
+
+
+
+
 
 def accessing_track(trial, track):
     track_file = os.path.join(basemap_csv_path, f'Trial_{trial}/Trial_{trial}_Track_{track}.csv')

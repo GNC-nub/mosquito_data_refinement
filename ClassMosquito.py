@@ -40,7 +40,6 @@ class Track:
     def getTrack(self): # [x, y, z, time]
         return [self.x, self.y, self.z, self.time]
 
-
 # Returns a list of lists of coordinates. A list of all te hoppings.
     # --> [ [ [x], [y], [z], [t] ], [more hoppings], exe... ]
     def getHoppingCoordinatesTrack(self, boundary = 0.02):
@@ -76,25 +75,14 @@ class Track:
 
 # Returns a list of the landing points of this track
     # --> [ [x,y,z,t], exe.. ]
-    def getLandigPointsTrack(self, boundary = 0.02):
+
+    def getLandingPointsTrack(self, boundary = 0.02):
         hoppings = self.getHoppingCoordinatesTrack(boundary=boundary)
         landing_points = []
         for hop in hoppings:
             x, y, z, t = hop
-            middle_i = len(x) // 2  # !Assumption! # coordinate in the middle of the hop is the 'most acurate'
-                                    # This determines in with area it is (side or top)
-            if landing_area_side(x[middle_i], y[middle_i], z[middle_i], boundary=boundary):
-                # At the side of the trap the landing point will be the closest to the z-axis -> smallest r value
-                x, y = np.array(x), np.array(y)
-                r = np.sqrt(x ** 2 + y ** 2) # Make a radius list
-                landing_point_i = np.argmin(r)
-                landing_point = [x[landing_point_i], y[landing_point_i], z[landing_point_i], t[landing_point_i]]
-                landing_points.append(landing_point)
-            elif landing_area_top(x[middle_i], y[middle_i], z[middle_i], boundary=boundary):
-                # At the top of the trap the landing point will be the closest to the lowest point -> smallest z
-                landing_point_i = z.index(min(z))
-                landing_point = [x[landing_point_i], y[landing_point_i], z[landing_point_i], t[landing_point_i]]
-                landing_points.append(landing_point)
+            landing_point = nearest_neighbour_to_trap_surface(x, y, z, t)
+            landing_points.append(landing_point)
         return landing_points
 
     def functionVelocity(self, x, delta_t):
@@ -188,7 +176,7 @@ class Track:
         ax.set_zlabel('Z')
         ax.set_title('3D (x, y, z) plot of a single track')
 
-        for landing_point in self.getLandigPointsTrack(boundary=boundary):
+        for landing_point in self.getLandingPointsTrack(boundary=boundary):
             x, y, z, t = landing_point
             ax.scatter(x, y, z, color = 'r', marker='o')
 
@@ -226,7 +214,6 @@ class Track:
             resting_time = t[-1] - t[0]
             resting_times.append(resting_time)
         return resting_times
-
 
 
 class Trial:
