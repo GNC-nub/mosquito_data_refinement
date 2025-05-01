@@ -304,6 +304,31 @@ class Trial:
                 hoppings_trial.append(hop)
         self.hoppings = hoppings_trial
 
+
+    def getLandingHoppingsTrial(self, boundary = 0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
+        if self.hoppings == None:
+            self.initializeHoppingCoordinatesTrial(boundary=boundary)
+        landing_hop = []
+        for hop in self.hoppings:
+            x, y, z, t = hop
+            if landing_area(x[-1], y[-1], z[-1], boundary=boundary):
+                landing_hop.append(hop)
+        return landing_hop
+
+    def getTakeOffHoppingsTrial(self, boundary=0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
+        if self.hoppings == None:
+            self.initializeHoppingCoordinatesTrial(boundary=boundary)
+        take_off_hop = []
+        for hop in self.hoppings:
+            x, y, z, t = hop
+            if landing_area(x[0], y[0], z[0], boundary=boundary):
+                take_off_hop.append(hop)
+        return take_off_hop
+
 # First/last coordinates #
 
 # List of last coordinates of a trial N
@@ -368,7 +393,7 @@ class Trial:
 
 # Resting time #
 
-# Returns tree lists of resting times: hopppings, landings, take-offs
+# Returns tree lists of resting times: hopppings, landings, take-offs N
     # --> list: [ t, exe...] = hoppings resting times
     # --> list: [ t, exe... ] = landing piece of track resting times
     # --> list: [ t, exe.. ] = take_off piece of track resting times
@@ -397,80 +422,76 @@ class Trial:
         return resting_hoppings, resting_landing_times, resting_take_off_times
 
 
-
-
 # Generates the most likely resting pairs in a dictionary, with lists of the resting time
 # and the associated resting spots in a trial.
-        # --> pairs[i_land] = i_takeoff (dictionary), [resting_times], [resting_points]
-    def getRestingPairsTimesPoints(self, threshold = 0.02, area_boundary = 0.03):
-        self.initializeLandingPoints(area_boundary=area_boundary)
+        # --> [paired_tracks], [resting_times], [resting_points]
+    def generatePairs(self, radial_threshold = 0.02, area_boundary = 0.02):
+        self.initializeEndLandingPoints(area_boundary=area_boundary)
         self.initializeTakeOffPoints(area_boundary=area_boundary)
+        self.initializeHoppingCoordinatesTrial(boundary=area_boundary)
         potential_pairs = []
 
-        for i_land, landing_point in enumerate(self.landingpoints):
-            x_land, y_land, z_land, time_land = landing_point
+        for i_land, landing_hop in enumerate(self.getLandingHoppingsTrial()):
+            x_land, y_land, z_land, t_land = landing_hop
+            x_land_beg, y_land_beg, z_land_beg, time_land_beg = x_land[0], y_land[0], z_land[0], t_land[0]
+            x_land_end, y_land_end, z_land_end, time_land_end = x_land[-1], y_land[-1], z_land[-1], t_land[-1]
 
-            for i_takeoff, take_off_point in enumerate(self.take_off_points):
-                    x_take, y_take, z_take, time_take = take_off_point
-                    dx, dy, dz, dtime = (x_take - x_land), (y_take - y_land), (z_take - z_land), (time_take - time_land)
+            for i_takeoff, take_off_hop in enumerate(self.getTakeOffHoppingsTrial()):
+                x_take, y_take, z_take, t_take = take_off_hop
+                x_take_beg, y_take_beg, z_take_beg, time_take_beg = x_take[0], y_take[0], z_take[0], t_take[0]
+                x_take_end, y_take_end, z_take_end, time_take_end = x_take[-1], y_take[-1], z_take[-1], t_take[-1]
+                dx, dy, dz, dtime = (x_take_beg - x_land_end), (y_take_beg - y_land_end), (z_take_beg - z_land_end), (time_take_beg - time_land_end)
 
-                    resting_time = dtime
-                    distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
+                resting_at_merge = dtime
+                total_resting_time = time_take_end - time_land_beg
 
-                    if distance < threshold and resting_time > 0:
-                        mean_x = (x_land + x_take) / 2
-                        mean_y = (y_land + y_take) / 2
-                        mean_z = (z_land + z_take) / 2
-                        resting_point = [mean_x, mean_y, mean_z]
-                        potential_pairs.append((distance, resting_time, i_land, i_takeoff, resting_point))
+                distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
+
+                if distance < radial_threshold and resting_at_merge > 0:
+                    mean_x = (x_land_end + x_take_beg) / 2
+                    mean_y = (y_land_end + y_take_beg) / 2
+                    mean_z = (z_land_end + z_take_beg) / 2
+                    resting_point = [mean_x, mean_y, mean_z]
+                    potential_pairs.append((distance, total_resting_time, i_land, i_takeoff, resting_point))
 
         potential_pairs.sort()
-
-        pairs = {}
         used_takeoff_points = set()
 
         resting_times = []
         resting_points = []
+        paired_tracks = []
 
-        for distance, resting_time, i_land, i_takeoff, resting_point in potential_pairs:
+        for distance, total_resting_time, i_land, i_takeoff, resting_point in potential_pairs:
             if i_takeoff not in used_takeoff_points:
-                pairs[i_land] = i_takeoff
                 used_takeoff_points.add(i_takeoff)
-                resting_times.append(resting_time)
+                resting_times.append(total_resting_time)
                 resting_points.append(resting_point)
-        return pairs, resting_times, resting_points
+                merge_track = self.getLandingHoppingsTrial()[i_land] + self.getTakeOffHoppingsTrial()[i_takeoff]
+                paired_tracks.append(merge_track)
+        return paired_tracks, resting_times, resting_points
 
 # Only get the resting time list of a trial
     # --> [resting_times]
-    def getRestingTimeTrial(self, radius = 0.02, area_boundary = 0.03):
-        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius, area_boundary=area_boundary)
+    def getRestingTimePairedTracksTrial(self, radius = 0.02, area_boundary = 0.02):
+        pairs, resting_times, resting_points = self.generatePairs(radius, area_boundary=area_boundary)
         return resting_times
 
 # Only get the resting points list of a trial
     # --> [resting_points]
-    def getRestingPointsTrial(self, radius = 0.02, area_boundary = 0.03):
-        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius, area_boundary=area_boundary)
+    def getRestingPointsPairedTracksTrial(self, radius = 0.02, area_boundary = 0.02):
+        pairs, resting_times, resting_points = self.generatePairs(radius, area_boundary=area_boundary)
         return resting_points
 
 # Only get the resting pairs dictionary of a trial     !NOT IN USE!
     # --> pairs[i_land] = i_takeoff (dictionary)
-    def getRestingPairsTrial(self, radius =0.02, area_boundary = 0.03):
-        pairs, resting_times, resting_points = self.getRestingPairsTimesPoints(radius, area_boundary = area_boundary)
+    def getPairedTracksTrial(self, radius =0.02, area_boundary = 0.02):
+        pairs, resting_times, resting_points = self.generatePairs(radius, area_boundary = area_boundary)
         return pairs
 
 # Get the total number of associated (landing -- take-off) pairs of a trial
     # --> amount
-    def countRestingPairsTrial(self, radius = 0.02):
-        return len(self.getRestingTimeTrial(radius))
-
-# Checks if there are any resting times that are more than 1320 / checks for impossible resting times   !NOT IN USE!
-    # --> amount
-    def getFalseRestingTimeTrial(self, radius = 0.02, resting_time_limit = 1320): #based on the fact that most trials are from 180 s to 1500 s
-        count = 0
-        for resting_time in self.getRestingTimeTrial(radius):
-            if resting_time > resting_time_limit:
-                count += 1
-        return count
+    def countRestingPairsTrial(self, radius = 0.02, area_boundary = 0.02):
+        return len(self.getPairedTracksTrial(radius=radius, area_boundary=area_boundary))
 
 
 # Landing and Capture rates #

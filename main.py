@@ -68,7 +68,9 @@ track.plot2DTrack()  # 2D
 trial.plotTrial()  # 3D
 trial.plot2DTrial()  # 2D
 
-
+'''
+print(trial.getTakeOffHoppingsTrial())
+print(trial.getLandingHoppingsTrial())
 # plot landing
 print(track.getHoppingCoordinatesTrack())
 print(f'All the resting times of trial {trial_number}, track {track_number}: {track.getRestingTimeTrack(boundary = landing_boundary)}')
@@ -76,7 +78,6 @@ print(track.getLandingPointsTrack(boundary = landing_boundary))
 track.plotLandingTrack(boundary=landing_boundary)
 track.plotLanding2DTrack(boundary = landing_boundary)
 
-'''
 
 print(trial.getRestingTimesHoppings())
 plt.violinplot(trial.getRestingTimesHoppings())
