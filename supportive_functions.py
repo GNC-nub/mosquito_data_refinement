@@ -146,11 +146,13 @@ def distance_to_cylinder_surface(point, cylinder):
     radial_distance = np.abs(np.sqrt(x **2 + y **2) - radius) # closest to the side of the trap, not to the z-axis
 
     if z_min <= z <= z_max:
-        vertical_distance = 0
+        combined_distance = radial_distance
     else:
         vertical_distance = min(np.abs(z- z_min), np.abs(z - z_max))
-
-    combined_distance = np.sqrt(radial_distance**2 + vertical_distance**2)
+        if radial_distance < 0:
+            combined_distance = vertical_distance
+        else:
+            combined_distance = np.sqrt(radial_distance**2 + vertical_distance**2)
     return combined_distance
 
 # A nearest neighbor search to find the closest point to the given cylinders that make up the trap.

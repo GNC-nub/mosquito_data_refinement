@@ -23,11 +23,11 @@ if __name__ == '__main__':
 
 import ClassMosquito
 
-
+import matplotlib.pyplot as plt
 # Run loading_matlab_file.py first!
 
-trial_number = 1
-track_number = 25
+trial_number = 6
+track_number = 4
 landing_boundary = 0.02
 # Initializing the dataset
 dataset = ClassMosquito.Dataset()
@@ -68,13 +68,19 @@ track.plot2DTrack()  # 2D
 trial.plotTrial()  # 3D
 trial.plot2DTrial()  # 2D
 
-'''
+
 # plot landing
 print(track.getHoppingCoordinatesTrack())
 print(f'All the resting times of trial {trial_number}, track {track_number}: {track.getRestingTimeTrack(boundary = landing_boundary)}')
 print(track.getLandingPointsTrack(boundary = landing_boundary))
 track.plotLandingTrack(boundary=landing_boundary)
 track.plotLanding2DTrack(boundary = landing_boundary)
+
+'''
+
+print(trial.getRestingTimesHoppings())
+plt.violinplot(trial.getRestingTimesHoppings())
+plt.show()
 quit()
 
 # Boxplot statistics to see significant differences  (significance in terminal)
