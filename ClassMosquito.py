@@ -75,7 +75,6 @@ class Track:
 
 # Returns a list of the landing points of this track
     # --> [ [x,y,z,t], exe.. ]
-
     def getLandingPointsTrack(self, boundary = 0.02):
         hoppings = self.getHoppingCoordinatesTrack(boundary=boundary)
         landing_points = []
@@ -85,6 +84,11 @@ class Track:
             landing_points.append(landing_point)
         return landing_points
 
+    def boolCaptureTrack(self):
+        bool = False
+        if capturing_area(self.x[-1], self.y[-1], self.z[-1]):
+            bool = True
+        return bool
     def functionVelocity(self, x, delta_t):
         v = []
         v1 = ( -3 * x[0] + 4 * x[1] - x[2] )  / 2 * delta_t
@@ -517,44 +521,26 @@ class Trial:
 
 # Get total of the landings of a trial measured by this program. If the track ends up in the defined landing area it is a landing.
     # --> amount
-    def countLandingsTrial(self):
-        if self.coordinate_list_trial == None:
-            self.initiateCoordinateList()
-        count = 0
-        for track in self.coordinate_list_trial:
-            x = track[1][-1]
-            y = track[2][-1]
-            z = track[3][-1]
-            if landing_area(x, y, z) == True:
-                count += 1
-        return count
+    def countLandingsTrial(self, boundary = 0.02):
+        return len(self.getLandingHoppingsTrial(boundary=boundary))
 
 # Get total of the take-offs of a trial measured by this program. If the track begins up in the defined landing area it is a take-off.
     # --> amount
-    def countTakeOffsTrial(self):
-        if self.coordinate_list_trial == None:
-            self.initiateCoordinateList()
-        count = 0
-        for track in self.coordinate_list_trial:
-            x = track[1][0]
-            y = track[2][0]
-            z = track[3][0]
-            if landing_area(x, y, z) == True:
-                count += 1
-        return count
-
+    def countTakeOffsTrial(self, boundary =0.02):
+        return len(self.getTakeOffHoppingsTrial(boundary=boundary))
 
 # What happens after take-off analysis #
 
 # Get total amount of tracks in a trial that begin in take-off and end in capture
     # --> amount
-    def countLandingToCaptureTrial(self):
-        if self.coordinate_list_trial == None:
-            self.initiateCoordinateList()
+    def countLandingToCaptureTrial(self, boundary = 0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
         count = 0
-        for track in self.coordinate_list_trial:
-            header, x, y, z, time = track
-            if landing_area(x[0], y[0], z[0]) == True and capturing_area(x[-1], y[-1], z[-1]) == True:
+        for track_object in self.track_objects:
+            num_hop = len(track_object.getHoppingCoordinatesTrack(boundary=boundary))
+            if num_hop > 1:
+                if track_object.boolCaptureTrack():
                     count += 1
         return count
 
@@ -562,13 +548,14 @@ class Trial:
 # Landing again
     # --> amount
     def countLandingAgainTrial(self):
-        if self.coordinate_list_trial == None:
-            self.initiateCoordinateList()
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
         count = 0
-        for track in self.coordinate_list_trial:
-            header, x, y, z, time = track
-            if landing_area(x[0], y[0], z[0]) == True and landing_area(x[-1], y[-1], z[-1]) == True:
-                count += 1
+        for track_object in self.track_objects:
+            num_hop = len(track_object.getHoppingCoordinatesTrack(boundary=boundary))
+            if num_hop > 1:
+                land_again = num_hop - 1
+                count += land_again
         return count
 
 # Get list of coordinates that begin in take-ff and end in capture of a trial
