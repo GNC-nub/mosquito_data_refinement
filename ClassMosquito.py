@@ -89,15 +89,18 @@ class Track:
     def getAllTracksInlandingArea(self, boundary = 0.02):
         all_track = []
         hoppings, landing, take_off, walking_track = self.splitCoordinatesTrack(boundary=boundary)
+
         if walking_track:
-            all_track += walking_track
-        elif hoppings:
-            if take_off:
-                all_track += take_off
-            if hoppings:
-                all_track += hoppings
-            if landing:
-                all_track += landing
+            all_track.append(walking_track)
+
+        if hoppings:
+            all_track += hoppings
+
+        if take_off:
+            all_track.append(take_off)
+
+        if landing:
+            all_track.append(landing)
         return all_track
 
 
@@ -458,10 +461,10 @@ class Trial:
                 merge_track = landing_tracks[i_land][1] + take_off_tracks[i_takeoff][1]
                 paired_tracks.append(merge_track)
         for i, item in enumerate(landing_tracks):
-            if i not in used_landing_points and landing_tracks:
+            if i not in used_landing_points and item[1]:
                 new_landings_tracks.append(item[1])
         for i, item in enumerate(take_off_tracks):
-            if i not in used_takeoff_points and take_off_tracks:
+            if i not in used_takeoff_points and item[1]:
                 new_take_off_tracks.append(item[1])
         return paired_tracks, paired_resting_times, paired_resting_points, new_landings_tracks, new_take_off_tracks
 
@@ -551,8 +554,8 @@ class Trial:
         if not self.landing_tracks:
             self.initializeLandingTracksTrial(radius= radius,boundary=boundary)
         resting_times = []
-        for take_off in self.landing_tracks:
-            x, y, z, t = take_off
+        for landing in self.landing_tracks:
+            x, y, z, t = landing
             resting_time = (t[-1] - t[0])
             resting_times.append(resting_time)
         return resting_times
