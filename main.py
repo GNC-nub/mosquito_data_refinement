@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 # Run loading_matlab_file.py first!
 
 trial_number = 6
-track_number = 4
+track_number = 308
 landing_boundary = 0.02
 # Initializing the dataset
 dataset = ClassMosquito.Dataset()
@@ -69,20 +69,31 @@ trial.plotTrial()  # 3D
 trial.plot2DTrial()  # 2D
 
 '''
-print(trial.getTakeOffHoppingsTrial())
-print(trial.getLandingHoppingsTrial())
+print(track.getRestingTimeTrack())
+print(trial.getRestingTimeTrial(radius = 0.02, boundary=landing_boundary))
+trial.initializeHoppingCoordinatesTrial(boundary=landing_boundary)
+trial.initializeHoppingPoints()
+print(trial.getTakeOffTracksTrial())
+
 # plot landing
 print(track.getHoppingCoordinatesTrack())
 print(f'All the resting times of trial {trial_number}, track {track_number}: {track.getRestingTimeTrack(boundary = landing_boundary)}')
-print(track.getLandingPointsTrack(boundary = landing_boundary))
+print(track.getHoppingLandingPointsTrack(boundary = landing_boundary))
+
+print(track.splitCoordinatesTrack(boundary=landing_boundary))
+print(track.getAllTracksInlandingArea(boundary=landing_boundary))
+print(len(track.getAllTracksInlandingArea(boundary=landing_boundary)))
+print(len(track.getAllTracksInlandingArea(boundary=landing_boundary)[0]))
 track.plotLandingTrack(boundary=landing_boundary)
 track.plotLanding2DTrack(boundary = landing_boundary)
 
 
+trial.generatePairs()
+
 print(trial.getRestingTimesHoppings())
 plt.violinplot(trial.getRestingTimesHoppings())
 plt.show()
-quit()
+
 
 # Boxplot statistics to see significant differences  (significance in terminal)
 

@@ -40,13 +40,15 @@ class Track:
     def getTrack(self): # [x, y, z, time]
         return [self.x, self.y, self.z, self.time]
 
-# Returns a list of lists of coordinates. A list of all te hoppings.
-    # --> [ [ [x], [y], [z], [t] ], [more hoppings], exe... ]
-    def getHoppingCoordinatesTrack(self, boundary = 0.02):
+# Returns hoppings, landing_track, take_off_track
+    def splitCoordinatesTrack(self, boundary=0.02):
         x, y, z, t = self.getTrack()
         in_run = False
         x_hop, y_hop, z_hop, t_hop = [], [], [], []
         hoppings = []
+        landing_track =[]
+        take_off_track = []
+        walking_track = []
         for i in range(len(x)):
             if landing_area(x[i], y[i], z[i], boundary=boundary):
                 if not in_run:
@@ -67,15 +69,63 @@ class Track:
                     in_run = False
                     hoppings.append([x_hop, y_hop, z_hop, t_hop])
                     x_hop, y_hop, z_hop, t_hop = [], [], [], []
-
         if in_run:
             # When a track ends in landing, the landing still gets added
             hoppings.append([x_hop, y_hop, z_hop, t_hop])
+
+        if hoppings:
+            if len(hoppings) == 1 and landing_area(x[-1], y[-1], z[-1], boundary = boundary) and landing_area(x[0], y[0], z[0], boundary=boundary):
+                walking_track = hoppings[0]
+                hoppings.pop()
+            else:
+                if landing_area(x[-1], y[-1], z[-1], boundary = boundary):
+                    landing_track = hoppings[-1]
+                    hoppings.pop()
+                if landing_area(x[0], y[0], z[0], boundary=boundary):
+                    take_off_track = hoppings[0]
+                    hoppings.pop(0)
+        return hoppings, landing_track, take_off_track, walking_track
+
+    def getAllTracksInlandingArea(self, boundary = 0.02):
+        all_track = []
+        hoppings, landing, take_off, walking_track = self.splitCoordinatesTrack(boundary=boundary)
+        if walking_track:
+            all_track += walking_track
+        elif hoppings:
+            if take_off:
+                all_track += take_off
+            if hoppings:
+                all_track += hoppings
+            if landing:
+                all_track += landing
+        return all_track
+
+
+    # Returns a list of lists of coordinates. A list of all te hoppings.
+    # --> [ [ [x], [y], [z], [t] ], [more hoppings], exe... ]
+    def getHoppingCoordinatesTrack(self, boundary = 0.02):
+        hoppings, landing_track, take_off_track, walking_track = self.splitCoordinatesTrack(boundary=boundary)
         return hoppings
+
+    def getLandingTrack(self, boundary = 0.02):
+        hoppings, landing_track, take_off_track, walking_track = self.splitCoordinatesTrack(boundary=boundary)
+        return landing_track
+    def getWalkingTrack(self, boundary = 0.02):
+        walk = []
+        hoppings, landing_track, take_off_track, walking_track = self.splitCoordinatesTrack(boundary=boundary)
+        if walking_track:
+            walk = walking_track
+        return walk
+    def getTakeOffTrack(self, boundary = 0.02):
+        take_off = []
+        hoppings, landing_track, take_off_track, walking_track = self.splitCoordinatesTrack(boundary=boundary)
+        if take_off_track:
+            take_off = take_off_track
+        return take_off
 
 # Returns a list of the landing points of this track
     # --> [ [x,y,z,t], exe.. ]
-    def getLandingPointsTrack(self, boundary = 0.02):
+    def getHoppingLandingPointsTrack(self, boundary = 0.02):
         hoppings = self.getHoppingCoordinatesTrack(boundary=boundary)
         landing_points = []
         for hop in hoppings:
@@ -83,6 +133,19 @@ class Track:
             landing_point = nearest_neighbor_to_trap_surface(x, y, z, t)
             landing_points.append(landing_point)
         return landing_points
+
+    def getDiplacementHoppingsTrack(self, boundary = 0.02):
+        hoppings = self.getHoppingCoordinatesTrack(boundary=boundary)
+        distances = []
+        if hoppings:
+            for hop in hoppings:
+                x, y, z, t = hop
+                distance = np.sqrt( (x[0] - x[-1])**2 +
+                                    (y[0] - y[-1])**2 +
+                                    (z[0] - z[-1])**2
+                                    )
+                distances.append(distance)
+        return distances
 
     def boolCaptureTrack(self):
         bool = False
@@ -115,7 +178,7 @@ class Track:
         acceleration_z = self.functionVelocity(vz, delta_t)
         return acceleration_x, acceleration_y, acceleration_z, delta_t
 
-    def lastCoordinatesTrack(self):
+    def lastCoordinateTrack(self):
         last_x =self.x[-1]
         last_y = self.y[-1]
         last_z = self.z[-1]
@@ -182,10 +245,12 @@ class Track:
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
         ax.set_title('3D (x, y, z) plot of a single track')
+        tracks = self.getAllTracksInlandingArea(boundary=boundary)
 
-        for landing_point in self.getLandingPointsTrack(boundary=boundary):
+        for landing_point in tracks:
             x, y, z, t = landing_point
             ax.scatter(x, y, z, color = 'r', marker='o')
+
 
         x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
         ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
@@ -214,9 +279,10 @@ class Track:
         plt.show()
 
     def getRestingTimeTrack(self, boundary = 0.02):
-        hoppings = self.getHoppingCoordinatesTrack(boundary=boundary)
+        tracks = self.getAllTracksInlandingArea(boundary=boundary)
+        print(tracks)
         resting_times = []
-        for i, hop in enumerate(hoppings):
+        for i, hop in enumerate(tracks):
             x, y, z, t = hop
             resting_time = t[-1] - t[0]
             resting_times.append(resting_time)
@@ -233,12 +299,16 @@ class Trial:
         else:
             self.condition = accessing_extra_info('Condition')[trial_num]
         self.header = f'Trial_{trial_num + 1}'
-        self.landingpoints = None
-        self.ending_landingpoints = None
+        self.hopping_points = None
+        self.landing_points = None
         self.take_off_points = None
+        self.paired_points = None
         self.num_tracks = None
         self.track_objects = None
-        self.hoppings = None
+
+        self.hopping_tracks = None
+        self.landing_tracks = None
+        self.take_off_tracks = None
 
 # All the coordinates of one trial N
     # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ] , exe... ]
@@ -258,86 +328,16 @@ class Trial:
             object_array.append(obj)
         return object_array
 
-
 # Initializes self.coordinate_list_trial, aka a list of all the point in a trial N
     # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ], exe... ]
     def initiateCoordinateList(self):
         self.coordinate_list_trial = accessing_trial(self.trial_num)
 
-
-# Initializes self.landingpoints, aka a list of all the landing point in a trial N
-    # --> [ [x, y, z, time], exe...]
-    def initializeLandingPoints(self, area_boundary=0.02):
-        if self.track_objects == None:
-            self.track_objects = self.getTrackObjects()
-        landingpoints = []
-        for track_object in self.track_objects:
-            landingpoints.append(track_object.getLandingPointsTrack(boundary=area_boundary))
-        self.landingpoints = landingpoints
-
-# Initializes self.ending_landingpoints, all the trials that end in landing have this landingspot. N
-    def initializeEndLandingPoints(self, area_boundary = 0.02):
-        landingpoints_list = []
-        for coordinate in self.lastCoordinatesTrial():
-            header, [x, y, z, time] = coordinate
-            if landing_area(x, y, z, boundary=area_boundary) == True:
-                landingpoints_list.append([x, y, z, time])
-        self.ending_landingpoints = landingpoints_list
-
-
-# Initializes self.take_off_points, a list all the take-off point in a trial
-    # Take-off point is the FIRST coordinate of the track!
-    # --> [ [x, y, z, time], exe...]
-    def initializeTakeOffPoints(self, area_boundary = 0.02):
-        take_off_points = []
-        for coordinate in self.firstCoordinatesTrial():
-            header, [x, y, z, time] = coordinate
-            if landing_area(x, y, z, boundary = area_boundary) == True:
-                take_off_points.append([x, y, z, time])
-        self.take_off_points = take_off_points
-
-# Initializes a list in self.hoppings of all the hoppings in trial N
-    # --> [ [ [[x], [y], [z], [t]], [[z], [y], [z], [t]] ... exe ]
-    def initializeHoppingCoordinatesTrial(self, boundary = 0.02):
-        if self.track_objects == None:
-            self.track_objects = self.getTrackObjects()
-        hoppings_trial = []
-        for track_object in self.track_objects:
-            hoppings_track = track_object.getHoppingCoordinatesTrack(boundary=boundary)
-            for hop in hoppings_track:
-                hoppings_trial.append(hop)
-        self.hoppings = hoppings_trial
-
-
-    def getLandingHoppingsTrial(self, boundary = 0.02):
-        if self.track_objects == None:
-            self.track_objects = self.getTrackObjects()
-        if self.hoppings == None:
-            self.initializeHoppingCoordinatesTrial(boundary=boundary)
-        landing_hop = []
-        for hop in self.hoppings:
-            x, y, z, t = hop
-            if landing_area(x[-1], y[-1], z[-1], boundary=boundary):
-                landing_hop.append(hop)
-        return landing_hop
-
-    def getTakeOffHoppingsTrial(self, boundary=0.02):
-        if self.track_objects == None:
-            self.track_objects = self.getTrackObjects()
-        if self.hoppings == None:
-            self.initializeHoppingCoordinatesTrial(boundary=boundary)
-        take_off_hop = []
-        for hop in self.hoppings:
-            x, y, z, t = hop
-            if landing_area(x[0], y[0], z[0], boundary=boundary):
-                take_off_hop.append(hop)
-        return take_off_hop
-
 # First/last coordinates #
 
 # List of last coordinates of a trial N
     # --> [ [ header, [x, y, z, time] ], exe... ]
-    def lastCoordinatesTrial(self):
+    def lastCoordinateTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
         storage = []
@@ -349,7 +349,7 @@ class Trial:
 
 # List of first coordinates of a trial N
     # --> [ [ header, [x, y, z, time] ], exe... ]
-    def firstCoordinatesTrial(self):
+    def firstCoordinateTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
         storage = []
@@ -395,110 +395,209 @@ class Trial:
         return self.getEndTimeTrial() - self.getStartTimeTrial()
 
 
-# Resting time #
 
-# Returns tree lists of resting times: hopppings, landings, take-offs N
-    # --> list: [ t, exe...] = hoppings resting times
-    # --> list: [ t, exe... ] = landing piece of track resting times
-    # --> list: [ t, exe.. ] = take_off piece of track resting times
-    def getRestingTimesHoppings(self, boundary = 0.02):
-        if self.track_objects == None:
-            self.track_objects = self.getTrackObjects()
-        resting_hoppings = []
-        resting_landing_times = []
-        resting_take_off_times = []
-        for track_object in self.track_objects:
-            resting_hopping = track_object.getRestingTimeTrack(boundary=boundary)
-            last_x, last_y, last_z, last_t = track_object.lastCoordinatesTrack()
-            first_x, first_y, first_z, first_t = track_object.firstCoorinatesTrack()
-            if landing_area(last_x, last_y, last_z, boundary=boundary) and landing_area(first_x, first_y, first_z, boundary=boundary) and len(resting_hopping) == 1:
-                resting_landing_times.append(resting_hopping[0])
-                resting_take_off_times.append(resting_hopping[0])
-            else:
-                if landing_area(last_x, last_y, last_z, boundary=boundary):  # check if track ends in landing
-                    last_time = resting_hopping.pop()
-                    resting_landing_times.append(last_time)
-                if landing_area(first_x, first_y, first_z, boundary=boundary):
-                    first_time = resting_hopping.pop(0)
-                    resting_take_off_times.append(first_time)
-            for hop in resting_hopping:
-                resting_hoppings.append(hop)
-        return resting_hoppings, resting_landing_times, resting_take_off_times
+#  Generates the most likely resting pairs in a dictionary, with lists of the resting time
 
 
-# Generates the most likely resting pairs in a dictionary, with lists of the resting time
 # and the associated resting spots in a trial.
         # --> [paired_tracks], [resting_times], [resting_points]
-    def generatePairs(self, radial_threshold = 0.02, area_boundary = 0.02):
-        self.initializeEndLandingPoints(area_boundary=area_boundary)
-        self.initializeTakeOffPoints(area_boundary=area_boundary)
-        self.initializeHoppingCoordinatesTrial(boundary=area_boundary)
+    def generatePairs(self, radius = 0.02, boundary = 0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
+
+        take_off_tracks = []
+        landing_tracks = []
+        for track_object in self.track_objects:
+            landing_tracks.append([track_object.track_num, track_object.getLandingTrack(boundary=boundary)])
+            take_off_tracks.append([track_object.track_num, track_object.getTakeOffTrack(boundary=boundary)])
+
         potential_pairs = []
+        for i_land, landing in enumerate(landing_tracks):
+            landing_num, landing = landing
+            if landing:
+                x_land, y_land, z_land, t_land = landing
+                x_land_beg, y_land_beg, z_land_beg, time_land_beg = x_land[0], y_land[0], z_land[0], t_land[0]
+                x_land_end, y_land_end, z_land_end, time_land_end = x_land[-1], y_land[-1], z_land[-1], t_land[-1]
+                for i_takeoff, take_offs in enumerate(take_off_tracks):
+                    take_off_num, take_off = take_offs
+                    if take_off:
+                        x_take, y_take, z_take, t_take = take_off
+                        x_take_beg, y_take_beg, z_take_beg, time_take_beg = x_take[0], y_take[0], z_take[0], t_take[0]
+                        x_take_end, y_take_end, z_take_end, time_take_end = x_take[-1], y_take[-1], z_take[-1], t_take[-1]
+                        dx, dy, dz, dtime = (x_take_beg - x_land_end), (y_take_beg - y_land_end), (
+                                    z_take_beg - z_land_end), (time_take_beg - time_land_end)
 
-        for i_land, landing_hop in enumerate(self.getLandingHoppingsTrial()):
-            x_land, y_land, z_land, t_land = landing_hop
-            x_land_beg, y_land_beg, z_land_beg, time_land_beg = x_land[0], y_land[0], z_land[0], t_land[0]
-            x_land_end, y_land_end, z_land_end, time_land_end = x_land[-1], y_land[-1], z_land[-1], t_land[-1]
+                        resting_at_merge = dtime
+                        total_resting_time = time_take_end - time_land_beg
 
-            for i_takeoff, take_off_hop in enumerate(self.getTakeOffHoppingsTrial()):
-                x_take, y_take, z_take, t_take = take_off_hop
-                x_take_beg, y_take_beg, z_take_beg, time_take_beg = x_take[0], y_take[0], z_take[0], t_take[0]
-                x_take_end, y_take_end, z_take_end, time_take_end = x_take[-1], y_take[-1], z_take[-1], t_take[-1]
-                dx, dy, dz, dtime = (x_take_beg - x_land_end), (y_take_beg - y_land_end), (z_take_beg - z_land_end), (time_take_beg - time_land_end)
+                        distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
 
-                resting_at_merge = dtime
-                total_resting_time = time_take_end - time_land_beg
-
-                distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
-
-                if distance < radial_threshold and resting_at_merge > 0:
-                    mean_x = (x_land_end + x_take_beg) / 2
-                    mean_y = (y_land_end + y_take_beg) / 2
-                    mean_z = (z_land_end + z_take_beg) / 2
-                    resting_point = [mean_x, mean_y, mean_z]
-                    potential_pairs.append((distance, total_resting_time, i_land, i_takeoff, resting_point))
+                        if distance < radius and resting_at_merge > 0:
+                            mean_x = (x_land_end + x_take_beg) / 2
+                            mean_y = (y_land_end + y_take_beg) / 2
+                            mean_z = (z_land_end + z_take_beg) / 2
+                            resting_point = [mean_x, mean_y, mean_z]
+                            potential_pairs.append((distance, total_resting_time, i_land, i_takeoff, resting_point))
 
         potential_pairs.sort()
         used_takeoff_points = set()
+        used_landing_points = set()
 
-        resting_times = []
-        resting_points = []
+        paired_resting_times = []
+        paired_resting_points = []
         paired_tracks = []
+        new_take_off_tracks = []
+        new_landings_tracks = []
 
         for distance, total_resting_time, i_land, i_takeoff, resting_point in potential_pairs:
             if i_takeoff not in used_takeoff_points:
                 used_takeoff_points.add(i_takeoff)
-                resting_times.append(total_resting_time)
-                resting_points.append(resting_point)
-                merge_track = self.getLandingHoppingsTrial()[i_land] + self.getTakeOffHoppingsTrial()[i_takeoff]
+                used_landing_points.add(i_land)
+                paired_resting_times.append(total_resting_time)
+                paired_resting_points.append(resting_point)
+                merge_track = landing_tracks[i_land][1] + take_off_tracks[i_takeoff][1]
                 paired_tracks.append(merge_track)
-        return paired_tracks, resting_times, resting_points
+        for i, item in enumerate(landing_tracks):
+            if i not in used_landing_points and landing_tracks:
+                new_landings_tracks.append(item[1])
+        for i, item in enumerate(take_off_tracks):
+            if i not in used_takeoff_points and take_off_tracks:
+                new_take_off_tracks.append(item[1])
+        return paired_tracks, paired_resting_times, paired_resting_points, new_landings_tracks, new_take_off_tracks
+
+# Initializes a list in self.hoppings of all the hoppings in trial N
+    # --> [ [ [[x], [y], [z], [t]], [[z], [y], [z], [t]] ... exe ]
+    def initializeHoppingCoordinatesTrial(self, boundary=0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
+        hopping_trial = []
+        for track_object in self.track_objects:
+            if track_object.getHoppingCoordinatesTrack(boundary=boundary):
+                hopping_trial += track_object.getHoppingCoordinatesTrack(boundary=boundary)
+        self.hopping_tracks = hopping_trial
+
+    def getHoppingsTrackTrial(self, boundary = 0.02):
+        if not self.hopping_tracks:
+            self.initializeHoppingCoordinatesTrial(boundary=boundary)
+        return self.hopping_tracks
+
+    def getLandingTracksTrial(self, radius = 0.02, boundary = 0.02):
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius = radius,
+                                                                                                            boundary=boundary)
+        return new_landings_tracks
+
+    def getTakeOffTracksTrial(self, radius = 0.02, boundary = 0.02):
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius = radius,
+                                                                                                            boundary=boundary)
+        return new_take_off_tracks
+
+    def getPairedTracksTrial(self, radius = 0.02, boundary = 0.02):
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius,
+                                                                                                            boundary=boundary)
+        return pairs
+    def initializeLandingTracksTrial(self, radius = 0.02, boundary = 0.02 ):
+        self.landing_tracks = self.getLandingTracksTrial(radius=radius, boundary=boundary)
+
+    def initializeTakeOffTracksTrial(self, radius = 0.02, boundary = 0.02):
+        self.take_off_tracks = self.getTakeOffTracksTrial(radius=radius, boundary=boundary)
+
+    def initializeHoppingPoints(self, boundary = 0.02):
+        if not self.hopping_tracks:
+            self.initializeHoppingCoordinatesTrial(boundary = boundary)
+        points = []
+        for hop in self.hopping_tracks:
+            x, y, z, t = hop
+            points.append(nearest_neighbor_to_trap_surface(x, y, z, t))
+        self.hopping_points = points
+
+    def initializeLandingPoints(self, radius = 0.02, boundary = 0.02):
+        if not self.landing_points:
+            self.initializeLandingTracksTrial(radius= radius, boundary=boundary)
+        landingpoints_list = []
+        for track in self.landing_tracks:
+            x, y, z, time = track
+            landingpoints_list.append(nearest_neighbor_to_trap_surface(x, y, z, time))
+        self.landing_points = landingpoints_list
+
+    def initializeTakeOffPoints(self, radius= 0.02, boundary = 0.02):
+        if not self.take_off_points:
+            self.initializeTakeOffTracksTrial(radius= radius,boundary=boundary)
+        landingpoints_list = []
+        for track in self.take_off_points:
+            x, y, z, time = track
+            landingpoints_list.append(nearest_neighbor_to_trap_surface(x, y, z, time))
+        self.take_off_points = landingpoints_list
+
+    def initializePairedPoints(self, radius = 0.02, boundary= 0.02):
+        self.paired_points = self.getRestingPointsPairsTrial(radius= radius,boundary=boundary)
 
 # Only get the resting time list of a trial
     # --> [resting_times]
-    def getRestingTimePairedTracksTrial(self, radius = 0.02, area_boundary = 0.02):
-        pairs, resting_times, resting_points = self.generatePairs(radius, area_boundary=area_boundary)
+    def getRestingTimePairsTrial(self, radius = 0.02, boundary = 0.02):
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius, boundary=boundary)
         return resting_times
 
-# Only get the resting points list of a trial
+    def getRestingTimeTakeOffsTrial(self, radius = 0.02, boundary = 0.02):
+        if not self.take_off_tracks:
+            self.initializeTakeOffTracksTrial(radius= radius,boundary=boundary)
+        resting_times = []
+        for take_off in self.take_off_tracks:
+            x, y, z, t = take_off
+            resting_time = (t[-1] - t[0])
+            resting_times.append(resting_time)
+        return resting_times
+
+    def getRestingTimeLandingsTrial(self, radius = 0.02, boundary = 0.02):
+        if not self.landing_tracks:
+            self.initializeLandingTracksTrial(radius= radius,boundary=boundary)
+        resting_times = []
+        for take_off in self.landing_tracks:
+            x, y, z, t = take_off
+            resting_time = (t[-1] - t[0])
+            resting_times.append(resting_time)
+        return resting_times
+
+    def getRestingTimeHoppingsTrial(self, boundary = 0.02):
+        if not self.hopping_tracks:
+            self.initializeHoppingCoordinatesTrial(boundary=boundary)
+        resting_times = []
+
+        for hop in self.hopping_tracks:
+            x, y, z, t = hop
+            duration = t[-1] - t[0]
+            resting_times.append(duration)
+        return resting_times
+
+    def getRestingTimeTrial(self, radius=0.02, boundary=0.02):
+        hoppings = self.getRestingTimeHoppingsTrial(boundary = boundary)
+        landings = self.getRestingTimeLandingsTrial(radius=radius, boundary=boundary)
+        take_offs = self.getRestingTimeTakeOffsTrial(radius=radius, boundary=boundary)
+        pairs = self.getRestingTimePairsTrial(radius = radius, boundary=boundary)
+        return hoppings + landings + take_offs + pairs
+
+    # Only get the resting points list of a trial
     # --> [resting_points]
-    def getRestingPointsPairedTracksTrial(self, radius = 0.02, area_boundary = 0.02):
-        pairs, resting_times, resting_points = self.generatePairs(radius, area_boundary=area_boundary)
+    def getRestingPointsPairsTrial(self, radius = 0.02, boundary = 0.02):
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius, boundary=boundary)
         return resting_points
 
-# Only get the resting pairs dictionary of a trial     !NOT IN USE!
-    # --> pairs[i_land] = i_takeoff (dictionary)
-    def getPairedTracksTrial(self, radius =0.02, area_boundary = 0.02):
-        pairs, resting_times, resting_points = self.generatePairs(radius, area_boundary = area_boundary)
-        return pairs
 
 # Get the total number of associated (landing -- take-off) pairs of a trial
     # --> amount
-    def countRestingPairsTrial(self, radius = 0.02, area_boundary = 0.02):
-        return len(self.getPairedTracksTrial(radius=radius, area_boundary=area_boundary))
+    def countPairsTrial(self, radius = 0.02, boundary = 0.02):
+        return len(self.getPairedTracksTrial(radius=radius, boundary=boundary))
+
+        # Resting time #
+
+        # Returns tree lists of resting times: hopppings, landings, take-offs N
+        # --> list: [ t, exe...] = hoppings resting times
+        # --> list: [ t, exe... ] = landing piece of track resting times
+        # --> list: [ t, exe.. ] = take_off piece of track resting times
 
 
-# Landing and Capture rates #
+
+
+    # Landing and Capture rates #
 
 # Get total of the catches for a trial measured by Cribellier et al. (2020)
     # --> amount
@@ -522,12 +621,15 @@ class Trial:
 # Get total of the landings of a trial measured by this program. If the track ends up in the defined landing area it is a landing.
     # --> amount
     def countLandingsTrial(self, boundary = 0.02):
-        return len(self.getLandingHoppingsTrial(boundary=boundary))
+        if self.hoppings == None:
+            self.initializeHoppingCoordinatesTrial()
+
+        return len(self.hoppings_track(boundary=boundary))
 
 # Get total of the take-offs of a trial measured by this program. If the track begins up in the defined landing area it is a take-off.
     # --> amount
     def countTakeOffsTrial(self, boundary =0.02):
-        return len(self.getTakeOffHoppingsTrial(boundary=boundary))
+        return len(self.getTakeOffTracksTrial(boundary=boundary))
 
 # What happens after take-off analysis #
 
@@ -538,7 +640,7 @@ class Trial:
             self.track_objects = self.getTrackObjects()
         count = 0
         for track_object in self.track_objects:
-            num_hop = len(track_object.getHoppingCoordinatesTrack(boundary=boundary))
+            num_hop = len(track_object.getAllTracksInlandingArea(boundary=boundary))
             if num_hop > 1:
                 if track_object.boolCaptureTrack():
                     count += 1
@@ -547,12 +649,12 @@ class Trial:
 # Get total amount of tracks in a trial that begin and end in landing
 # Landing again
     # --> amount
-    def countLandingAgainTrial(self):
+    def countLandingAgainTrial(self, boundary =0.02):
         if self.track_objects == None:
             self.track_objects = self.getTrackObjects()
         count = 0
         for track_object in self.track_objects:
-            num_hop = len(track_object.getHoppingCoordinatesTrack(boundary=boundary))
+            num_hop = len(track_object.getAllTracksInlandingArea(boundary=boundary))
             if num_hop > 1:
                 land_again = num_hop - 1
                 count += land_again
@@ -560,26 +662,26 @@ class Trial:
 
 # Get list of coordinates that begin in take-ff and end in capture of a trial
     # --> [[x, y, z], exe... ]
-    def getCoordinatesLandingToCapture(self, area_boundary = 0.03):
-        if self.coordinate_list_trial == None:
-            self.initiateCoordinateList()
+    def getCoordinatesLandingToCapture(self, boundary = 0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
         take_off_coordinates = []
-        for track in self.coordinate_list_trial:
-            header, x, y, z, time = track
-            if landing_area(x[0], y[0], z[0], boundary = area_boundary) == True and capturing_area(x[-1], y[-1], z[-1], boundary= area_boundary) == True:
-                take_off_coordinates.append([x[0], y[0], z[0]])
+        for track_object in self.track_objects:
+            if capturing_area(track_object.x[-1], track_object.y[-1], track_object.z[-1], boundary=boundary):
+                x, y, z, t = track_object.getHoppingLandingPointsTrack(boundary=boundary)[-1]
+                take_off_coordinates.append([x, y, z])
         return take_off_coordinates
 
-# Get list of coordinates that begin and end in landing of a trial
+# Get list of coordinates that begin and end in landing of a trial ! NOT UPDATED ±
 # Landing again
     # --> [[x, y, z], exe... ]
-    def getCoordinatesLandingAgain(self, area_boundary = 0.03):
+    def getCoordinatesLandingAgain(self, boundary = 0.03):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
         take_off_coordinates = []
         for track in self.coordinate_list_trial:
             header, x, y, z, time = track
-            if landing_area(x[0], y[0], z[0], boundary = area_boundary) == True and landing_area(x[-1], y[-1], z[-1], boundary = area_boundary) == True:
+            if landing_area(x[0], y[0], z[0], boundary = boundary) == True and landing_area(x[-1], y[-1], z[-1], boundary = boundary) == True:
                 take_off_coordinates.append([x[0], y[0], z[0]])
         return take_off_coordinates
 
@@ -646,7 +748,7 @@ class Trial:
     # --> 3D plot
     def plotLandingPointsTrial(self):
         ax = plt.figure().add_subplot(projection='3d')
-        for track in self.lastCoordinatesTrial():
+        for track in self.lastCoordinateTrial():
             last_x, last_y, last_z, last_time = track[1]
             if landing_area(last_x, last_y, last_z) == True:
                 ax.scatter(last_x, last_y, last_z, color='r', marker='o')
@@ -960,13 +1062,13 @@ class Dataset:
 
 # Get landing coordinates in 2D in two lists: r and z
     # ---> list r , list z
-    def getlandingPointsTheta(self, area_boundary = 0.03):
+    def getlandingPointsTheta(self, boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
         z_list = []
         for trial_object in self.trialobjects:
-            trial_object.initializeLandingPoints(area_boundary=area_boundary)
+            trial_object.initializeLandingPoints(boundary=boundary)
             for coordinate in trial_object.landingpoints:
                 x, y, z, time = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
@@ -976,13 +1078,13 @@ class Dataset:
 
 # Get take off coordinates in 2D in two lists: r and z
     # ---> list r , list z
-    def getTakeOffPointsTheta(self, area_boundary = 0.03):
+    def getTakeOffPointsTheta(self, boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
         z_list = []
         for trial_object in self.trialobjects:
-            trial_object.initializeTakeOffPoints(area_boundary= area_boundary)
+            trial_object.initializeTakeOffPoints(boundary= boundary)
             for coordinate in trial_object.take_off_points:
                 x, y, z, time = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
@@ -1433,8 +1535,8 @@ class Dataset:
 
 # Get the matrix of the landing points
     # --> matrix
-    def getMatrixLandingPoints(self, area_boundary = 0.03):
-        r, z = self.getlandingPointsTheta(area_boundary = area_boundary)
+    def getMatrixLandingPoints(self, boundary = 0.03):
+        r, z = self.getlandingPointsTheta(boundary = boundary)
         landingpoint_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix))
         landingpoint_count_matrix = landingpoint_count_matrix.T
@@ -1443,8 +1545,8 @@ class Dataset:
 
 # Get the matrix of the take-off points
     # --> matrix
-    def getMatrixTakeOffPoints(self, area_boundary = 0.03):
-        r, z = self.getTakeOffPointsTheta(area_boundary = area_boundary)
+    def getMatrixTakeOffPoints(self, boundary = 0.03):
+        r, z = self.getTakeOffPointsTheta(boundary = boundary)
         takeoffpoints_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix))
         takeoffpoints_count_matrix = takeoffpoints_count_matrix.T
@@ -1463,13 +1565,13 @@ class Dataset:
 
 # Get the matrix of the resting times, with a possibility to change the upper/lower time boundary
     # --> 2 matrices: resting_time_matrix_np, resting_time_count_matrix_np
-    def getMatrixRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500, area_boundary = 0.03):
+    def getMatrixRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500, boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
         for trial_object in self.trialobjects:
-            resting_times = trial_object.getRestingTimeTrial(area_boundary=area_boundary)
-            points = trial_object.getRestingPointsTrial(area_boundary=area_boundary)
+            resting_times = trial_object.getRestingTimeTrial(boundary=boundary)
+            points = trial_object.getRestingPointsTrial(boundary=boundary)
             for i, resting_time in enumerate(resting_times):
                 if lower_time_boundary < resting_time < upper_time_boundary:
                     w_list.append(resting_time)
@@ -1521,12 +1623,12 @@ class Dataset:
 
 # Get the matrix of the probability that a mosquito that takes-off in a certain space ends in capture.
     # --> matrix
-    def getMatrixCaptureProbability(self, area_boundary = 0.03):
+    def getMatrixCaptureProbability(self, boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
         for trial_object in self.trialobjects:
-            coordinates = trial_object.getCoordinatesLandingToCapture(area_boundary = area_boundary)
+            coordinates = trial_object.getCoordinatesLandingToCapture(boundary = boundary)
             for coordinate in coordinates:
                 x, y, z = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
@@ -1540,12 +1642,12 @@ class Dataset:
 
 # Get the matrix of the probability that a mosquito that takes-off in a certain space lands again.
     # --> matrix
-    def getMatrixLandingAgainProbability(self, area_boundary = 0.03):
+    def getMatrixLandingAgainProbability(self, boundary = 0.03):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
         for trial_object in self.trialobjects:
-            coordinates = trial_object.getCoordinatesLandingAgain(area_boundary=area_boundary)
+            coordinates = trial_object.getCoordinatesLandingAgain(boundary=boundary)
             for coordinate in coordinates:
                 x, y, z = coordinate
                 r =  np.sqrt(x ** 2 + y ** 2)
@@ -1582,9 +1684,9 @@ class Dataset:
 
 # Plot heatmap of all the landing points, normalized by volume!
     # --> heatmap
-    def plotHeatmapLandingPointNormilized(self, area_boundary = 0.03):
+    def plotHeatmapLandingPointNormilized(self, boundary = 0.03):
         volume_matrix = self.getMatrixNormilizingVolume()
-        landingpoint_matrix = self.getMatrixLandingPoints(area_boundary = area_boundary)
+        landingpoint_matrix = self.getMatrixLandingPoints(boundary = boundary)
 
         density_matrix = landingpoint_matrix / volume_matrix
 
@@ -1793,10 +1895,10 @@ class Dataset:
         pairs3 = []
         pairs4 = []
         for trial_object in self.trialobjects:
-            pairs1.append(trial_object.countRestingPairsTrial(0.01))
-            pairs2.append(trial_object.countRestingPairsTrial(0.02))
-            pairs3.append(trial_object.countRestingPairsTrial(0.03))
-            pairs4.append(trial_object.countRestingPairsTrial(0.04))
+            pairs1.append(trial_object.countPairsTrial(0.01))
+            pairs2.append(trial_object.countPairsTrial(0.02))
+            pairs3.append(trial_object.countPairsTrial(0.03))
+            pairs4.append(trial_object.countPairsTrial(0.04))
         data = [pairs1, pairs2, pairs3, pairs4]
         plt.boxplot(data)
         plt.title('Nr of of associated landings with take offs per radius threshold')
@@ -1812,7 +1914,7 @@ class Dataset:
         for trial_object in self.trialobjects:
             landings.append(trial_object.countLandingsTrial())
             takeoffs.append(trial_object.countTakeOffsTrial())
-            associated_pairs.append(trial_object.countRestingPairsTrial())
+            associated_pairs.append(trial_object.countPairsTrial())
         data = [landings, takeoffs, associated_pairs]
         plt.boxplot(data)
         plt.title('Boxplot of the number of landings, take-offs and landing / take_off pairs')
@@ -1820,7 +1922,7 @@ class Dataset:
         plt.ylabel('nr of associated landings with take offs')
         plt.show()
 
-# PLot sub heatmaps with different area_boundary options to see if the landing point results change
+# PLot sub heatmaps with different boundary options to see if the landing point results change
     # --> 4 subplots from 0.01 to 0.04 m width
     def plotHeatmapLandingPointsBoundaryAssociationTest(self):
         volume_matrix = self.getMatrixNormilizingVolume()
@@ -1836,7 +1938,7 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
         for i, ax in enumerate(axs):
-            density_matrix = self.getMatrixLandingPoints(area_boundary=boundaries[i]) / volume_matrix
+            density_matrix = self.getMatrixLandingPoints(boundary=boundaries[i]) / volume_matrix
             heatmap = ax.pcolormesh(X, Y, density_matrix, cmap=custom_cmap)
             ax.set_title(titles[i])
             ax.set_xlabel('r')
@@ -1855,7 +1957,7 @@ class Dataset:
         plt.show()
 
 
-# PLot sub heatmaps with different area_boundary options to see if the resting points result change
+# PLot sub heatmaps with different boundary options to see if the resting points result change
     # --> 4 subplots from 0.01 to 0.04 m width
     def plotHeatmapRestingPointsBoundaryAssociationTest(self, lower_time_boundary = 0, upper_time_boundary = 1500):
         volume_matrix = self.getMatrixNormilizingVolume()
@@ -1871,7 +1973,7 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
         for i, ax in enumerate(axs):
-            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary, area_boundary=boundaries[i])
+            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary, boundary=boundaries[i])
             density_matrix =  resting_time_count_matrix_np/ volume_matrix
             heatmap = ax.pcolormesh(X, Y, density_matrix, cmap=custom_cmap)
             ax.set_title(titles[i])
@@ -1906,7 +2008,7 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
         for i, ax in enumerate(axs):
-            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary,area_boundary=boundaries[i])
+            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary,boundary=boundaries[i])
             resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix_np, nan=0.0)
             resting_time_matrix_norm = resting_time_matrix_np / volume_matrix
             resting_time_matrix_average = np.divide(resting_time_matrix_norm, resting_time_count_matrix,
@@ -1942,8 +2044,8 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
         for i, ax in enumerate(axs):
-            captured_coord_matrix = self.getMatrixCaptureProbability(area_boundary=boundaries[i])
-            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(area_boundary=boundaries[i])
+            captured_coord_matrix = self.getMatrixCaptureProbability(boundary=boundaries[i])
+            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(boundary=boundaries[i])
 
             matrix_norm = captured_coord_matrix / volume_matrix
             matrix_average_norm = np.divide(matrix_norm, takeoffpoints_count_matrix,
@@ -1980,8 +2082,8 @@ class Dataset:
         colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
         for i, ax in enumerate(axs):
-            landing_again_matrix = self.getMatrixLandingAgainProbability(area_boundary=boundaries[i])
-            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(area_boundary=boundaries[i])
+            landing_again_matrix = self.getMatrixLandingAgainProbability(boundary=boundaries[i])
+            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(boundary=boundaries[i])
             matrix_norm = landing_again_matrix / volume_matrix
             matrix_average_norm = np.divide(matrix_norm, takeoffpoints_count_matrix,
                                             where=takeoffpoints_count_matrix != 0)
