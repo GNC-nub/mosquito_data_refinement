@@ -65,26 +65,30 @@ dataset.plotViolinStartEndTimes()
 track.plotTrack()  # 3D
 track.plot2DTrack()  # 2D
 
+# Single track landing tracks visualisation 
+track.plotLandingTrack(boundary=landing_boundary)  # 3D
+track.plotLanding2DTrack(boundary = landing_boundary)  # 2D
+
+'''
 # single trial plotting
 trial.plotTrial()  # 3D
-trial.plot2DTrial()  # 2D
+trial.plot2DTrial(radius_boundary)  # 2D
+trial.plotRestingPointsTrial(radius=radius_boundary, boundary=landing_boundary)  # 3D
+trial.plot2DRestingPointsTrial(radius=radius_boundary, boundary=landing_boundary)  # 2D
 
-
-# plot landing tracks
-track.plotLandingTrack(boundary=landing_boundary)
-track.plotLanding2DTrack(boundary = landing_boundary)
+quit()
 
 
 print(trial.countWalkingTracksTrial(boundary=landing_boundary))
 print(dataset.countWalkingTracks(boundary=landing_boundary))
 
-'''
+
 # plot resting time
 trial.plotDisplacementViolin(radius=radius_boundary, boundary=landing_boundary)
-quit()
 trial.plotRestingTimesViolinTrial(radius=radius_boundary, boundary=landing_boundary)
 
-quit()
+
+
 
 # Boxplot statistics to see significant differences  (significance in terminal)
 
