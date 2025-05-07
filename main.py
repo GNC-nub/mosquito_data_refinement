@@ -80,6 +80,8 @@ print(dataset.countWalkingTracks(boundary=landing_boundary))
 
 '''
 # plot resting time
+trial.plotDisplacementViolin(radius=radius_boundary, boundary=landing_boundary)
+quit()
 trial.plotRestingTimesViolinTrial(radius=radius_boundary, boundary=landing_boundary)
 
 quit()

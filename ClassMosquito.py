@@ -137,7 +137,7 @@ class Track:
             landing_points.append(landing_point)
         return landing_points
 
-    def getDiplacementHoppingsTrack(self, boundary = 0.02):
+    def getDisplacementHoppingsTrack(self, boundary = 0.02):
         hoppings = self.getHoppingCoordinatesTrack(boundary=boundary)
         distances = []
         if hoppings:
@@ -581,6 +581,14 @@ class Trial:
             boundary=boundary)
         return new_walking_tracks
 
+    def getAllTracksInBoundaryTrial(self, radius = 0.02, boundary = 0.02):
+        walkings = self.getWalkingTracksTrial(radius=radius, boundary=boundary)
+        paired_tracks = self.getPairedTracksTrial(radius=radius, boundary=boundary)
+        landings = self.getLandingTracksTrial(radius=radius, boundary=boundary)
+        take_offs = self.getTakeOffTracksTrial(radius=radius, boundary=boundary)
+        hoppings = self.getHoppingsTrackTrial(boundary=boundary)
+        return walkings + paired_tracks + landings + take_offs + hoppings
+
     def initializeLandingTracksTrial(self, radius = 0.02, boundary = 0.02 ):
         self.landing_tracks = self.getLandingTracksTrial(radius=radius, boundary=boundary)
 
@@ -618,6 +626,7 @@ class Trial:
 
     def initializePairedPoints(self, radius = 0.02, boundary= 0.02):
         self.paired_points = self.getRestingPointsPairsTrial(radius= radius,boundary=boundary)
+
 
 # Only get the resting time list of a trial
     # --> [resting_times]
@@ -696,7 +705,17 @@ class Trial:
                  count += 1
         return count
 
-
+    def getDisplacementsTrial(self, radius = 0.02, boundary = 0.02):
+        tracks = self.getAllTracksInBoundaryTrial(radius=radius, boundary=boundary)
+        displacements = []
+        for track in tracks:
+            x, y, z, t = track
+            displacement = np.sqrt((x[0] - x[-1]) ** 2 +
+                                   (y[0] - y[-1]) ** 2 +
+                                   (z[0] - z[-1]) ** 2
+                                   )
+            displacements.append(displacement)
+        return displacements
 # PLotting resting times #
 
     def plotRestingTimesViolinTrial(self, radius = 0.02, boundary = 0.02):
@@ -725,14 +744,11 @@ class Trial:
 
 
     def plotDisplacementViolin(self, radius = 0.02, boundary=0.02):
-
-        return
-
-
-
-
-
-
+        data = self.getDisplacementsTrial(radius=radius, boundary=boundary)
+        plt.violinplot(data)
+        plt.title(f'Displacements of movement in landing area\nin Trial {self.trial_num}')
+        plt.ylabel('Distance in meters (m)')
+        plt.show()
 
 
     # Landing and Capture rates #
@@ -759,10 +775,10 @@ class Trial:
 # Get total of the landings of a trial measured by this program. If the track ends up in the defined landing area it is a landing.
     # --> amount
     def countLandingsTrial(self, boundary = 0.02):
-        if self.hoppings == None:
-            self.initializeHoppingCoordinatesTrial()
+        if self.hopping_tracks == None:
+            self.initializeHoppingCoordinatesTrial(boundary=boundary)
 
-        return len(self.hoppings_track(boundary=boundary))
+        return len(self.hopping_tracks)
 
 # Get total of the take-offs of a trial measured by this program. If the track begins up in the defined landing area it is a take-off.
     # --> amount
