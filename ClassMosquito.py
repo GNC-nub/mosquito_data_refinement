@@ -312,6 +312,7 @@ class Trial:
         self.hopping_tracks = None
         self.landing_tracks = None
         self.take_off_tracks = None
+        self.walking_tracks = None
 
 # All the coordinates of one trial N
     # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ] , exe... ]
@@ -410,13 +411,91 @@ class Trial:
 
         take_off_tracks = []
         landing_tracks = []
+        walking_tracks = []
+        paired_tracks = []
         for track_object in self.track_objects:
             landing_tracks.append([track_object.track_num, track_object.getLandingTrack(boundary=boundary)])
             take_off_tracks.append([track_object.track_num, track_object.getTakeOffTrack(boundary=boundary)])
+            walking_tracks.append([track_object.track_num, track_object.getWalkingTrack(boundary=boundary)])
+
+        potential_new_landing = []
+        potential_new_take_off =[]
+
+        for i_walk, walkings in enumerate(walking_tracks):
+            walking_num, walking = walkings
+            if walking:
+                x_walk, y_walk, z_walk, t_walk = walking
+                x_walk_beg, y_walk_beg, z_walk_beg, time_walk_beg = x_walk[0], y_walk[0], z_walk[0], t_walk[0]
+                x_walk_end, y_walk_end, z_walk_end, time_walk_end = x_walk[-1], y_walk[-1], z_walk[-1], t_walk[-1]
+                for i_land, landings in enumerate(landing_tracks):
+                    landing_num, landing = landings
+                    if landing:
+                        x_land, y_land, z_land, t_land = landing
+                        x_land_end, y_land_end, z_land_end, time_land_end = x_land[-1], y_land[-1], z_land[-1], t_land[
+                            -1]
+
+                        dx, dy, dz, dtime = (x_walk_beg - x_land_end), (y_walk_beg - y_land_end), (
+                                z_walk_beg - z_land_end), (time_walk_beg - time_land_end)
+                        distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
+                        resting_at_merge = dtime
+                        if distance < radius and resting_at_merge > 0:
+                            potential_new_landing.append((distance,  i_land, i_walk, landing_num))
+                for i_takeoff, take_offs in enumerate(take_off_tracks):
+                    take_off_num, take_off = take_offs
+                    if take_off:
+                        x_take, y_take, z_take, t_take = take_off
+                        x_take_beg, y_take_beg, z_take_beg, time_take_beg = x_take[0], y_take[0], z_take[0], t_take[0]
+                        dx, dy, dz, dtime = (x_take_beg - x_walk_end), (y_take_beg - y_walk_end), (
+                                z_take_beg - z_walk_end), (time_take_beg - time_walk_end)
+                        distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
+                        resting_at_merge = dtime
+                        if distance < radius and resting_at_merge > 0:
+                            potential_new_take_off.append((distance, i_takeoff, i_walk, take_off_num))
+
+        potential_new_landing.sort()
+        potential_new_take_off.sort()
+        used_walking_take_points = set()
+        used_walking_landing_points = set()
+        used_walking_tracks = set()
+        new_walking_tracks = []
+
+        for distance_land, i_land, i_walk_land, landing_num in potential_new_landing:
+            for distance_take, i_takeoff, i_walk_take, take_off_num in potential_new_take_off:
+                if i_walk_land == i_walk_take:
+                    if i_land not in used_walking_landing_points and i_takeoff not in used_walking_take_points:
+                        used_walking_landing_points.add(i_land)
+                        used_walking_take_points.add(i_walk_take)
+                        merged_track = [sum(axes, []) for axes in zip(landing_tracks[i_land][1], walking_tracks[i_walk_land][1], take_off_tracks[i_takeoff][1])]
+                        landing_tracks.pop(i_land)
+                        take_off_tracks.pop(i_takeoff)
+                        walking_tracks.pop(i_walk_land)
+                        paired_tracks.append(merged_track)
+
+        for distance, i_land, i_walk, landing_num in potential_new_landing:
+            if i_land not in used_walking_landing_points:
+                used_walking_landing_points.add(i_land)
+                used_walking_tracks.add(i_walk)
+                merged_lan_track = [a + b for a, b in zip(landing_tracks[i_land][1], walking_tracks[i_walk][1])]
+                landing_tracks.pop(i_land)
+                walking_tracks.pop(i_walk)
+                landing_tracks.append([landing_num, merged_lan_track])
+
+        for distance, i_takeoff, i_walk, take_off_num in potential_new_take_off:
+            if i_takeoff not in used_walking_take_points:
+                used_walking_take_points.add(i_takeoff)
+                used_walking_tracks.add(i_walk)
+                merged_take_track = [a + b for a, b in zip(walking_tracks[i_walk][1], take_off_tracks[i_takeoff][1])]
+                take_off_tracks.pop(i_takeoff)
+                walking_tracks.pop(i_walk)
+                take_off_tracks.append([take_off_num, merged_take_track])
+
+        for track_num, walking in walking_tracks:
+            if walking:
+                new_walking_tracks.append(walking)
 
         potential_pairs = []
-        for i_land, landing in enumerate(landing_tracks):
-            landing_num, landing = landing
+        for i_land, landings in enumerate(landing_tracks):
+            landing_num, landing = landings
             if landing:
                 x_land, y_land, z_land, t_land = landing
                 x_land_beg, y_land_beg, z_land_beg, time_land_beg = x_land[0], y_land[0], z_land[0], t_land[0]
@@ -429,12 +508,10 @@ class Trial:
                         x_take_end, y_take_end, z_take_end, time_take_end = x_take[-1], y_take[-1], z_take[-1], t_take[-1]
                         dx, dy, dz, dtime = (x_take_beg - x_land_end), (y_take_beg - y_land_end), (
                                     z_take_beg - z_land_end), (time_take_beg - time_land_end)
-
                         resting_at_merge = dtime
                         total_resting_time = time_take_end - time_land_beg
 
                         distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
-
                         if distance < radius and resting_at_merge > 0:
                             mean_x = (x_land_end + x_take_beg) / 2
                             mean_y = (y_land_end + y_take_beg) / 2
@@ -448,7 +525,6 @@ class Trial:
 
         paired_resting_times = []
         paired_resting_points = []
-        paired_tracks = []
         new_take_off_tracks = []
         new_landings_tracks = []
 
@@ -458,7 +534,7 @@ class Trial:
                 used_landing_points.add(i_land)
                 paired_resting_times.append(total_resting_time)
                 paired_resting_points.append(resting_point)
-                merge_track = landing_tracks[i_land][1] + take_off_tracks[i_takeoff][1]
+                merge_track = [a + b for a, b in zip(landing_tracks[i_land][1], take_off_tracks[i_takeoff][1])]
                 paired_tracks.append(merge_track)
         for i, item in enumerate(landing_tracks):
             if i not in used_landing_points and item[1]:
@@ -466,7 +542,7 @@ class Trial:
         for i, item in enumerate(take_off_tracks):
             if i not in used_takeoff_points and item[1]:
                 new_take_off_tracks.append(item[1])
-        return paired_tracks, paired_resting_times, paired_resting_points, new_landings_tracks, new_take_off_tracks
+        return paired_tracks, paired_resting_times, paired_resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks
 
 # Initializes a list in self.hoppings of all the hoppings in trial N
     # --> [ [ [[x], [y], [z], [t]], [[z], [y], [z], [t]] ... exe ]
@@ -485,25 +561,34 @@ class Trial:
         return self.hopping_tracks
 
     def getLandingTracksTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius = radius,
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius = radius,
                                                                                                             boundary=boundary)
         return new_landings_tracks
 
     def getTakeOffTracksTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius = radius,
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius = radius,
                                                                                                             boundary=boundary)
         return new_take_off_tracks
 
     def getPairedTracksTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius,
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius,
                                                                                                             boundary=boundary)
         return pairs
+
+    def getWalkingTracksTrial(self, radius = 0.02, boundary = 0.02):
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(
+            radius,
+            boundary=boundary)
+        return new_walking_tracks
+
     def initializeLandingTracksTrial(self, radius = 0.02, boundary = 0.02 ):
         self.landing_tracks = self.getLandingTracksTrial(radius=radius, boundary=boundary)
 
     def initializeTakeOffTracksTrial(self, radius = 0.02, boundary = 0.02):
         self.take_off_tracks = self.getTakeOffTracksTrial(radius=radius, boundary=boundary)
 
+    def initializeWalkingTrackTrial(self, radius = 0.02, boundary = 0.02):
+        self.walking_tracks = self.getWalkingTracksTrial(radius=radius, boundary=boundary)
     def initializeHoppingPoints(self, boundary = 0.02):
         if not self.hopping_tracks:
             self.initializeHoppingCoordinatesTrial(boundary = boundary)
@@ -537,7 +622,7 @@ class Trial:
 # Only get the resting time list of a trial
     # --> [resting_times]
     def getRestingTimePairsTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius, boundary=boundary)
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius, boundary=boundary)
         return resting_times
 
     def getRestingTimeTakeOffsTrial(self, radius = 0.02, boundary = 0.02):
@@ -571,17 +656,29 @@ class Trial:
             resting_times.append(duration)
         return resting_times
 
+    def getRestingTimeWalkingsTrial(self, radius = 0.02, boundary = 0.02):
+        if not self.walking_tracks:
+            self.initializeWalkingTrackTrial(radius=radius,boundary=boundary)
+        resting_times = []
+
+        for hop in self.walking_tracks:
+            x, y, z, t = hop
+            duration = t[-1] - t[0]
+            resting_times.append(duration)
+        return resting_times
+
     def getRestingTimeTrial(self, radius=0.02, boundary=0.02):
         hoppings = self.getRestingTimeHoppingsTrial(boundary = boundary)
         landings = self.getRestingTimeLandingsTrial(radius=radius, boundary=boundary)
         take_offs = self.getRestingTimeTakeOffsTrial(radius=radius, boundary=boundary)
         pairs = self.getRestingTimePairsTrial(radius = radius, boundary=boundary)
-        return hoppings + landings + take_offs + pairs
+        walking = self.getRestingTimeWalkingsTrial(radius = radius, boundary=boundary)
+        return hoppings + landings + take_offs + pairs + walking
 
     # Only get the resting points list of a trial
     # --> [resting_points]
     def getRestingPointsPairsTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks = self.generatePairs(radius, boundary=boundary)
+        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius, boundary=boundary)
         return resting_points
 
 
@@ -590,12 +687,50 @@ class Trial:
     def countPairsTrial(self, radius = 0.02, boundary = 0.02):
         return len(self.getPairedTracksTrial(radius=radius, boundary=boundary))
 
-        # Resting time #
+    def countWalkingTracksTrial(self, boundary = 0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
+        count = 0
+        for track_object in self.track_objects:
+             if track_object.getWalkingTrack(boundary=boundary):
+                 count += 1
+        return count
 
-        # Returns tree lists of resting times: hopppings, landings, take-offs N
-        # --> list: [ t, exe...] = hoppings resting times
-        # --> list: [ t, exe... ] = landing piece of track resting times
-        # --> list: [ t, exe.. ] = take_off piece of track resting times
+
+# PLotting resting times #
+
+    def plotRestingTimesViolinTrial(self, radius = 0.02, boundary = 0.02):
+        hoppings = self.getRestingTimeHoppingsTrial(boundary=boundary)
+        landings = self.getRestingTimeLandingsTrial(radius=radius, boundary=boundary)
+        take_offs = self.getRestingTimeTakeOffsTrial(radius=radius, boundary=boundary)
+        pairs = self.getRestingTimePairsTrial(radius=radius, boundary=boundary)
+        walkings = self.getRestingTimeWalkingsTrial(radius=radius, boundary=boundary)
+        all_resting_times = self.getRestingTimeTrial(radius=radius, boundary=boundary)
+        data = [hoppings, landings, take_offs, walkings, pairs, all_resting_times]
+        titles = ['Hoppings', 'Landings', 'Take-offs', 'walkings', 'Resting pairs', 'All resting times']
+        fig, axs = plt.subplots(nrows=1, ncols=len(data))
+        for i, ax in enumerate(axs):
+            vp = ax.violinplot([data[i]], showmeans=True)
+            ax.set_title(titles[i])
+            ax.set_ylabel('Resting Times in Seconds (s)')
+            ax.set_xticks([])
+            count = len(data[i])
+            y_min, y_max = ax.get_ylim()
+            y_pos = y_min - 0.05 * (y_max - y_min)
+            ax.text(0.95, y_pos, f'n={count}', ha='center', va='top', fontsize=9)
+
+        plt.suptitle(f'Resting Times for Trial {self.trial_num}', fontsize = 14)
+        plt.tight_layout()
+        plt.show()
+
+
+    def plotDisplacementViolin(self, radius = 0.02, boundary=0.02):
+
+        return
+
+
+
+
 
 
 
@@ -1060,7 +1195,13 @@ class Dataset:
                 times.append(length)
         return np.average(times)
 
-
+    def countWalkingTracks(self, boundary=0.02):
+        if self.trialobjects == None:
+            self.trialobjects = self.getTrialObjects()
+        count = 0
+        for trial_object in self.trialobjects:
+            count += trial_object.countWalkingTracksTrial(boundary=boundary)
+        return count
 # Landing -- take_off #
 
 # Get landing coordinates in 2D in two lists: r and z
