@@ -26,8 +26,8 @@ import ClassMosquito
 import matplotlib.pyplot as plt
 # Run loading_matlab_file.py first!
 
-trial_number = 6
-track_number = 308
+trial_number = 46
+track_number = 478
 landing_boundary = 0.02
 radius_boundary = 0.02
 # Initializing the dataset
@@ -69,27 +69,24 @@ track.plot2DTrack()  # 2D
 track.plotLandingTrack(boundary=landing_boundary)  # 3D
 track.plotLanding2DTrack(boundary = landing_boundary)  # 2D
 
-'''
+
 # single trial plotting
 trial.plotTrial()  # 3D
 trial.plot2DTrial(radius_boundary)  # 2D
 trial.plotRestingPointsTrial(radius=radius_boundary, boundary=landing_boundary)  # 3D
 trial.plot2DRestingPointsTrial(radius=radius_boundary, boundary=landing_boundary)  # 2D
+trial.plotTrackLandingAgainTrial()
+trial.plotTrackLandingToCaptureTrial()
 
-quit()
-
-
-print(trial.countWalkingTracksTrial(boundary=landing_boundary))
-print(dataset.countWalkingTracks(boundary=landing_boundary))
-
+trial.plotMultipleTracks([728, 478])
 
 # plot resting time
 trial.plotDisplacementViolin(radius=radius_boundary, boundary=landing_boundary)
 trial.plotRestingTimesViolinTrial(radius=radius_boundary, boundary=landing_boundary)
+'''
 
-
-
-
+dataset.plotQuatificationHistogramTracks(radius=radius_boundary, boundary=landing_boundary)
+quit()
 # Boxplot statistics to see significant differences  (significance in terminal)
 
 # --> Amount of captures vs landings per trial

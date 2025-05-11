@@ -22,6 +22,7 @@ from statsmodels.stats.multicomp import pairwise_tukeyhsd
 import pandas as pd
 import numpy as np
 from statistics import median
+import matplotlib.cm as cm
 
 class Track:
     def __init__(self, trial_num, track_num): # if you want to load a track, fill in both trial and track, otherwise only whole trial
@@ -248,12 +249,12 @@ class Track:
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
         ax.set_title('3D (x, y, z) plot of a single track')
-        tracks = self.getAllTracksInlandingArea(boundary=boundary)
 
+        # plot landing points
+        tracks = self.getRestingPointsTrack(boundary=boundary)
         for landing_point in tracks:
             x, y, z, t = landing_point
             ax.scatter(x, y, z, color = 'r', marker='o')
-
 
         x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
         ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
@@ -270,6 +271,12 @@ class Track:
                 plt.plot([r[i-1], r[i]], [z[i-1], z[i]], color='r')
             else:
                 plt.plot([r[i-1], r[i]], [z[i-1], z[i]], color='g')
+        # plot landing points
+        tracks = self.getRestingPointsTrack(boundary=boundary)
+        for landing_point in tracks:
+            x, y, z, t = landing_point
+            r = np.sqrt(x ** 2 + y ** 2)
+            plt.scatter(r, z, color='r', marker='o')
         inlet_r, inlet_z, body_r, body_z = getTrap2D()
         plt.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
         plt.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
@@ -444,7 +451,7 @@ class Trial:
                         distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
                         resting_at_merge = dtime
                         if distance < radius and resting_at_merge > 0:
-                            potential_new_landing.append((distance,  i_land, i_walk, landing_num))
+                            potential_new_landing.append((distance, i_land, i_walk, landing_num, walking_num))
                 for i_takeoff, take_offs in enumerate(take_off_tracks):
                     take_off_num, take_off = take_offs
                     if take_off:
@@ -455,7 +462,7 @@ class Trial:
                         distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
                         resting_at_merge = dtime
                         if distance < radius and resting_at_merge > 0:
-                            potential_new_take_off.append((distance, i_takeoff, i_walk, take_off_num))
+                            potential_new_take_off.append((distance, i_takeoff, i_walk, take_off_num, walking_num))
 
         potential_new_landing.sort()
         potential_new_take_off.sort()
@@ -464,35 +471,49 @@ class Trial:
         used_walking_tracks = set()
         new_walking_tracks = []
 
-        for distance_land, i_land, i_walk_land, landing_num in potential_new_landing:
-            for distance_take, i_takeoff, i_walk_take, take_off_num in potential_new_take_off:
+        landings_to_remove = []
+        take_offs_to_remove = []
+        walkings_to_remove = []
+
+        for distance_land, i_land, i_walk_land, landing_num, walking_num in potential_new_landing:
+            for distance_take, i_takeoff, i_walk_take, take_off_num, walking_num in potential_new_take_off:
                 if i_walk_land == i_walk_take:
-                    if i_land not in used_walking_landing_points and i_takeoff not in used_walking_take_points:
+                    if i_land not in used_walking_landing_points and i_takeoff not in used_walking_take_points and i_walk_take not in used_walking_tracks:
                         used_walking_landing_points.add(i_land)
-                        used_walking_take_points.add(i_walk_take)
+                        used_walking_take_points.add(i_takeoff)
+                        used_walking_tracks.add(i_walk_land)
                         merged_track = [sum(axes, []) for axes in zip(landing_tracks[i_land][1], walking_tracks[i_walk_land][1], take_off_tracks[i_takeoff][1])]
-                        landing_tracks.pop(i_land)
-                        take_off_tracks.pop(i_takeoff)
-                        walking_tracks.pop(i_walk_land)
                         paired_tracks.append(merged_track)
 
-        for distance, i_land, i_walk, landing_num in potential_new_landing:
-            if i_land not in used_walking_landing_points:
+                        landings_to_remove.append(i_land)
+                        take_offs_to_remove.append(i_takeoff)
+                        walkings_to_remove.append(i_walk_land)
+
+
+        for distance, i_land, i_walk, landing_num, walking_num in potential_new_landing:
+            if i_land not in used_walking_landing_points and i_walk not in used_walking_tracks:
                 used_walking_landing_points.add(i_land)
                 used_walking_tracks.add(i_walk)
                 merged_lan_track = [a + b for a, b in zip(landing_tracks[i_land][1], walking_tracks[i_walk][1])]
-                landing_tracks.pop(i_land)
-                walking_tracks.pop(i_walk)
+                landings_to_remove.append(i_land)
+                walkings_to_remove.append(i_walk)
                 landing_tracks.append([landing_num, merged_lan_track])
 
-        for distance, i_takeoff, i_walk, take_off_num in potential_new_take_off:
-            if i_takeoff not in used_walking_take_points:
+        for distance, i_takeoff, i_walk, take_off_num, walking_num in potential_new_take_off:
+            if i_takeoff not in used_walking_take_points and i_walk not in used_walking_tracks:
                 used_walking_take_points.add(i_takeoff)
                 used_walking_tracks.add(i_walk)
                 merged_take_track = [a + b for a, b in zip(walking_tracks[i_walk][1], take_off_tracks[i_takeoff][1])]
-                take_off_tracks.pop(i_takeoff)
-                walking_tracks.pop(i_walk)
+                take_offs_to_remove.append(i_takeoff)
+                walkings_to_remove.append(i_walk)
                 take_off_tracks.append([take_off_num, merged_take_track])
+
+        for i_walk in sorted(walkings_to_remove, reverse=True):
+            walking_tracks.pop(i_walk)
+        for i_land in sorted(landings_to_remove, reverse=True):
+            landing_tracks.pop(i_land)
+        for i_takeoff in sorted(take_offs_to_remove, reverse=True):
+            take_off_tracks.pop(i_takeoff)
 
         for track_num, walking in walking_tracks:
             if walking:
@@ -907,6 +928,35 @@ class Trial:
 
 # Plotting  #
 
+    def plotMultipleTracks(self, track_nums, radius = 0.02, boundary = 0.02):
+        if self.track_objects == None:
+            self.track_objects = self.getTrackObjects()
+
+        ax = plt.figure().add_subplot(projection='3d')
+        warm_colors = ['r', 'orange', 'y', 'm', 'purple', 'darkorange']
+        cold_colors = ['b', 'g', 'cyan', 'darkblue', 'royalblue', 'lime']
+        for i_track, num in enumerate(track_nums):
+            for track_object in self.track_objects:
+                if track_object.track_num == num:
+                    x, y, z, t = track_object.getTrack()
+                    for i in range(1, len(x)):
+                        if landing_area(x[i], y[i], z[i], boundary=boundary):
+                            ax.plot([x[i - 1], x[i]], [y[i - 1], y[i]], [z[i - 1], z[i]], color=warm_colors[i_track])
+                        else:
+                            ax.plot([x[i - 1], x[i]], [y[i - 1], y[i]], [z[i - 1], z[i]], color=cold_colors[i_track])
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.set_title('3D (x, y, z) plot of a single track')
+
+        x_grid_body, y_grid_body, z_grid_body, x_grid_inlet, y_grid_inlet, z_grid_inlet = getTrap()
+        ax.plot_surface(x_grid_body, y_grid_body, z_grid_body, alpha=0.5, color='b')
+        ax.plot_surface(x_grid_inlet, y_grid_inlet, z_grid_inlet, alpha=0.5, color='b')
+        ax.set_aspect('equal', adjustable='box')
+
+        plt.show()
+
+
 # Plot all the tracks of a trial in one 3D figure
     # --> 3D plot
     def plotTrial(self, radius = 0.02, boundary = 0.02):
@@ -1009,8 +1059,6 @@ class Trial:
         plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
         plt.show()
 
-
-# WORKED UNTIL HEREEEEE !!!!!!!!!
 
 
 
@@ -1171,7 +1219,7 @@ class Dataset:
 # Initialize all the simulated (by this program) landings per short-range cue condition
     # --> 3 lists: self.landing_without, self.landing_with_heat, self.landing_with_heat_water
     # ---> [ num, num, num ]
-    def initializeLandingConditions(self):
+    def initializeLandingConditions(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         data_without = []
@@ -1179,23 +1227,23 @@ class Dataset:
         data_with_heat_water = []
         for trial_object in self.getTrialObjects():
             if trial_object.condition == "without":
-                data_without.append(trial_object.countLandingsTrial())
+                data_without.append(trial_object.countLandingsTrial(radius=radius, boundary=boundary))
             elif trial_object.condition == "with_heat":
-                data_with_heat.append(trial_object.countLandingsTrial())
+                data_with_heat.append(trial_object.countLandingsTrial(radius=radius, boundary=boundary))
             else:
-                data_with_heat_water.append(trial_object.countLandingsTrial())
+                data_with_heat_water.append(trial_object.countLandingsTrial(radius=radius, boundary=boundary))
         self.landing_without = data_without
         self.landing_with_heat = data_with_heat
         self.landing_with_heat_water = data_with_heat_water
 
 # Initialize all the simulated (by this program) landings in a list: self.landings_all_trials
     # ---> [ num, num, num ]
-    def initializeLandingAllTrials(self):
+    def initializeLandingAllTrials(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         landing_count_per_trial = []
         for trial_object in self.getTrialObjects():
-            landing_count_per_trial.append(trial_object.countLandingsTrial())
+            landing_count_per_trial.append(trial_object.countLandingsTrial(radius=radius, boundary=boundary))
         self.landing_all_trials = landing_count_per_trial
 
 # Get the trial information as objects in a list
@@ -1210,7 +1258,6 @@ class Dataset:
 
 # Duration #
 
-
 # Get start times of all the trials
     # --> list
     def getStartTimes(self):
@@ -1218,8 +1265,7 @@ class Dataset:
             self.trialobjects = self.getTrialObjects()
         beginning_points = []
         for trial_object in self.trialobjects:
-            if trial_object.trial_num != 59:
-                beginning_points.append(trial_object.getStartTimeTrial())
+            beginning_points.append(trial_object.getStartTimeTrial())
         return beginning_points
 
 # Get end times of all the trials
@@ -1229,8 +1275,7 @@ class Dataset:
             self.trialobjects = self.getTrialObjects()
         end_points = []
         for trial_object in self.trialobjects:
-            if trial_object.trial_num != 59:
-                end_points.append(trial_object.getEndTimeTrial())
+            end_points.append(trial_object.getEndTimeTrial())
         return end_points
 
 # Get number of tracks per trial
@@ -1257,40 +1302,94 @@ class Dataset:
                 times.append(length)
         return np.average(times)
 
-    def countWalkingTracks(self, boundary=0.02):
+    def countWalkings(self, radius = 0.02, boundary=0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         count = 0
         for trial_object in self.trialobjects:
-            count += trial_object.countWalkingTracksTrial(boundary=boundary)
+            count += trial_object.countWalkingTracksTrial(radius=radius, boundary=boundary)
         return count
+    def countLandings(self, radius = 0.02, boundary=0.02):
+        if self.trialobjects == None:
+            self.trialobjects = self.getTrialObjects()
+        count = 0
+        for trial_object in self.trialobjects:
+            count += trial_object.countLandingsTrial(radius=radius, boundary=boundary)
+        return count
+    def countTakeOffs(self, radius = 0.02, boundary=0.02):
+        if self.trialobjects == None:
+            self.trialobjects = self.getTrialObjects()
+        count = 0
+        for trial_object in self.trialobjects:
+            count += trial_object.countTakeOffTrial(radius=radius, boundary=boundary)
+        return count
+    def countRestingPairs(self, radius = 0.02, boundary=0.02):
+        if self.trialobjects == None:
+            self.trialobjects = self.getTrialObjects()
+        count = 0
+        for trial_object in self.trialobjects:
+            count += trial_object.countPairsTrial(radius=radius, boundary=boundary)
+        return count
+    def countHoppings(self, boundary=0.02):
+        if self.trialobjects == None:
+            self.trialobjects = self.getTrialObjects()
+        count = 0
+        for trial_object in self.trialobjects:
+            count += trial_object.countHoppingsTrial(boundary=boundary)
+        return count
+    def countAllTracks(self):
+        return sum(self.getNumTracksPerTrial())
+
+    def plotQuatificationHistogramTracks(self, radius = 0.02, boundary=0.02):
+        walkings = self.countWalkings(radius=radius, boundary=boundary)
+        landings = self.countLandings(radius=radius, boundary=boundary)
+        take_offs = self.countTakeOffs(radius=radius, boundary=boundary)
+        pairs = self.countRestingPairs(radius=radius, boundary=boundary)
+        hoppings = self.countHoppings(boundary=boundary)
+
+        values = [hoppings, landings, take_offs, pairs, walkings]
+        labels = [f'Hoppings; {hoppings}', f'Landings: {landings}', f'Take offs: {take_offs}', f'Pairs: {pairs}', f'Walkings: {walkings}']
+        colors = ['red', 'blue', 'green', 'orange', 'purple']
+
+        bottom = 0
+        for i in range(len(values)):
+            plt.bar(0, values[i], bottom=bottom, color=colors[i], label=labels[i])
+            bottom += values[i]
+
+        plt.ylabel('NUmber of track parts per group')
+        plt.title('Quantification of Hoppings, landings, take-offs, resting pairs and walkings\nin the total dataset.')
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+        plt.show()
+
 # Landing -- take_off #
 
 # Get landing coordinates in 2D in two lists: r and z
     # ---> list r , list z
-    def getlandingPointsTheta(self, boundary = 0.03):
+    def getlandingPointsTheta(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
         z_list = []
         for trial_object in self.trialobjects:
-            trial_object.initializeLandingPoints(boundary=boundary)
-            for coordinate in trial_object.landingpoints:
+            trial_object.initializeLandingPoints(radius=radius, boundary=boundary)
+            for coordinate in trial_object.landing_points:
                 x, y, z, time = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
                 r_list.append(r)
                 z_list.append(z)
         return r_list, z_list
 
+
 # Get take off coordinates in 2D in two lists: r and z
     # ---> list r , list z
-    def getTakeOffPointsTheta(self, boundary = 0.03):
+    def getTakeOffPointsTheta(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
         z_list = []
         for trial_object in self.trialobjects:
-            trial_object.initializeTakeOffPoints(boundary= boundary)
+            trial_object.initializeTakeOffPoints(radius=radius, boundary=boundary)
             for coordinate in trial_object.take_off_points:
                 x, y, z, time = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
@@ -1300,15 +1399,15 @@ class Dataset:
 
 # Get landing coordinates in 2D, specify the condition
     # --> list r, list z
-    def getlandingPointsThetaPerCondition(self, condition):
+    def getlandingPointsThetaPerCondition(self, condition, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
         z_list = []
         for trial_object in self.trialobjects:
-            trial_object.initializeLandingPoints()
+            trial_object.initializeLandingPoints(radius=radius, boundary=boundary)
             if trial_object.condition == condition:
-                for coordinate in trial_object.landingpoints:
+                for coordinate in trial_object.landing_points:
                     x, y, z, time = coordinate
                     r = np.sqrt(x ** 2 + y ** 2)
                     r_list.append(r)
