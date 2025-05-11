@@ -889,7 +889,7 @@ class Trial:
 # Get list of coordinates that begin and end in landing of a trial
 # Landing again
     # --> [[x, y, z], exe... ]
-    def getCoordinatesLandingAgain(self, boundary = 0.03):
+    def getCoordinatesLandingAgain(self, boundary = 0.02):
         if self.track_objects == None:
             self.track_objects = self.getTrackObjects()
         take_off_coordinates = []
@@ -1366,7 +1366,7 @@ class Dataset:
 
 # Get landing coordinates in 2D in two lists: r and z
     # ---> list r , list z
-    def getlandingPointsTheta(self, radius = 0.02, boundary = 0.02):
+    def getlandingPoints2D(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
@@ -1383,7 +1383,7 @@ class Dataset:
 
 # Get take off coordinates in 2D in two lists: r and z
     # ---> list r , list z
-    def getTakeOffPointsTheta(self, radius = 0.02, boundary = 0.02):
+    def getTakeOffPoints2D(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
@@ -1399,7 +1399,7 @@ class Dataset:
 
 # Get landing coordinates in 2D, specify the condition
     # --> list r, list z
-    def getlandingPointsThetaPerCondition(self, condition, radius = 0.02, boundary = 0.02):
+    def getlandingPoints2DPerCondition(self, condition, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list = []
@@ -1419,12 +1419,12 @@ class Dataset:
 
 # Get average resting time in a string
     # --> mean +- standard deviation
-    def getAvarageRestingTime(self, lower_boundary = 0):
+    def getAvarageRestingTime(self, lower_boundary = 0, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_list = []
         for trial_object in self.trialobjects:
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             for point in resting_time_trial:
                 if point > lower_boundary:
                     resting_time_list.append(point)
@@ -1434,12 +1434,12 @@ class Dataset:
 
 # Get the median resting time
     # --> 1st quartile, median, 3rd quartile
-    def getMedianRestingTime(self, lower_boundary = 0):
+    def getMedianRestingTime(self, lower_boundary = 0, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_list = []
         for trial_object in self.trialobjects:
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             for point in resting_time_trial:
                 if point > lower_boundary:
                     resting_time_list.append(point)
@@ -1450,12 +1450,12 @@ class Dataset:
 
 # Get the longest resting time in the whole dataset
     # --> num / amount
-    def getLongestRestingTime(self):
+    def getLongestRestingTime(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_list = []
         for trial_object in self.trialobjects:
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             for point in resting_time_trial:
                 resting_time_list.append(point)
         longest_resting_time = max(resting_time_list)
@@ -1463,12 +1463,12 @@ class Dataset:
 
 # Count the num of resting times below the boundary given
     # --> num / amount
-    def countSmallRestingTimes(self, boundary_seconds):
+    def countSmallRestingTimes(self, boundary_seconds, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_list = []
         for trial_object in self.trialobjects:
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             for point in resting_time_trial:
                 if point < boundary_seconds:
                     resting_time_list.append(point)
@@ -1476,24 +1476,24 @@ class Dataset:
 
 # Count the total resting times in the whole dataset
     # --> num / amount
-    def countTotalRestingTimes(self):
+    def countTotalRestingTimes(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_list = []
         for trial_object in self.trialobjects:
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             for point in resting_time_trial:
                     resting_time_list.append(point)
         return len(resting_time_list)
 
 # Count the total landing point in the whole dataset
     # --> num / amount
-    def countLandingPoints(self):
+    def countLandingPoints(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         landing_points = 0
         for trial_object in self.trialobjects:
-            landing_points += trial_object.countLandingsTrial()
+            landing_points += trial_object.countLandingsTrial(radius=radius, boundary=boundary)
         return landing_points
 
 # Count the total captured mosquitoes in the whole dataset
@@ -1578,27 +1578,27 @@ class Dataset:
 
 # Gives the percentage of landings after take-off (from the total take-offs)
     # --> num / amount
-    def calculatingPercentagesLandingAgain(self):
+    def calculatingPercentagesLandingAgain(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         total_take_offs = 0
         land_again = 0
         for trial_object in self.trialobjects:
-            land_again += trial_object.countLandingAgainTrial()
-            total_take_offs += trial_object.countTakeOffsTrial()
+            land_again += trial_object.countLandingAgainTrial(boundary=boundary)
+            total_take_offs += trial_object.countTakeOffTrial(radius=radius, boundary=boundary)
         percentage_land_again = land_again / total_take_offs * 100
         return percentage_land_again
 
 # Gives the percentage of captures after take-off (from the total take-offs)
     # --> num / amount
-    def calculatingPercentagesLandingToCapture(self):
+    def calculatingPercentagesLandingToCapture(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         total_take_offs = 0
         land_to_capture = 0
         for trial_object in self.trialobjects:
-            land_to_capture += trial_object.countLandingToCaptureTrial()
-            total_take_offs += trial_object.countTakeOffsTrial()
+            land_to_capture += trial_object.countLandingToCaptureTrial(boundary=boundary)
+            total_take_offs += trial_object.countTakeOffTrial(radius=radius, boundary=boundary)
         percentage_land_to_capture = land_to_capture / total_take_offs * 100
         return percentage_land_to_capture
 
@@ -1655,11 +1655,11 @@ class Dataset:
 
 # Plots boxplot of the amount of landings per condition
     # Prints significance in the terminal
-    def plotBoxplotLandingCondition(self):
+    def plotBoxplotLandingCondition(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         if self.landing_without == None and self.landing_with_heat == None and self.landing_with_heat_water == None:
-            self.initializeLandingConditions()
+            self.initializeLandingConditions(radius=radius, boundary=boundary)
         #anova
         data = [self.landing_without, self.landing_with_heat, self.landing_with_heat_water]
         f_stat, p_value = self.testAnovaConditions(data)
@@ -1681,9 +1681,9 @@ class Dataset:
 
 # Plots boxplot of the amount of landings per condition
     # Prints significance in the terminal
-    def plotBoxplotCatchesVsLandings(self):
+    def plotBoxplotCatchesVsLandings(self, radius = 0.02, boundary = 0.02):
         if self.landing_all_trials == None:
-            self.initializeLandingAllTrials()
+            self.initializeLandingAllTrials(radius=radius, boundary=boundary)
         if self.catches_all_trials == None:
             self.initializeSimulatedCatchesAllTrials()
         data = [self.catches_all_trials, self.landing_all_trials]
@@ -1704,12 +1704,12 @@ class Dataset:
 # Plotting resting times #
 
 # PLots histogram of resting times of the whole dataset
-    def plotHistogramRestingTime(self):
+    def plotHistogramRestingTime(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_list = []
         for trial_object in self.trialobjects:
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             for point in resting_time_trial:
                 resting_time_list.append(point)
         plt.hist(resting_time_list, bins=20)
@@ -1719,12 +1719,12 @@ class Dataset:
         plt.show()
 
 # Plots a histogram of the resting times between a given time boundary (in seconds)
-    def plotHistogramRestingTimeZoomedIn(self, low, high):
+    def plotHistogramRestingTimeZoomedIn(self, low, high, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_list = []
         for trial_object in self.trialobjects:
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             for point in resting_time_trial:
                 if low < point < high:
                     resting_time_list.append(point)
@@ -1735,14 +1735,14 @@ class Dataset:
         plt.show()
 
 # PLot a histogram of the resting time per given condition
-    def plotHistogramRestingTimeCondition(self, condition):
+    def plotHistogramRestingTimeCondition(self, condition, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_list = []
         for trial_object in self.trialobjects:
             condition_trial = trial_object.condition
             if condition_trial == condition:
-                resting_time_trial = trial_object.getRestingTimeTrial()
+                resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
                 for point in resting_time_trial:
                     resting_time_list.append(point)
         plt.hist(resting_time_list, bins=20)
@@ -1752,7 +1752,7 @@ class Dataset:
         plt.show()
 
 # PLot a boxplot of the resting times differentiating between the three short-range cue conditions
-    def plotBoxplotRestingTimeCondition(self):
+    def plotBoxplotRestingTimeCondition(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_without = []
@@ -1760,7 +1760,7 @@ class Dataset:
         resting_time_with_heat_water = []
         for trial_object in self.trialobjects:
             condition_trial = trial_object.condition
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             if condition_trial == 'without':
                 for point in resting_time_trial:
                     resting_time_without.append(point)
@@ -1789,7 +1789,7 @@ class Dataset:
         plt.show()
 
 # PLot a violin plot of the resting times differentiating between the three short-range cue conditions
-    def plotViolinplotRestingTimeCondition(self):
+    def plotViolinplotRestingTimeCondition(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         resting_time_without = []
@@ -1797,7 +1797,7 @@ class Dataset:
         resting_time_with_heat_water = []
         for trial_object in self.trialobjects:
             condition_trial = trial_object.condition
-            resting_time_trial = trial_object.getRestingTimeTrial()
+            resting_time_trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             if condition_trial == 'without':
                 for point in resting_time_trial:
                     resting_time_without.append(point)
@@ -1840,8 +1840,8 @@ class Dataset:
 
 # Get the matrix of the landing points
     # --> matrix
-    def getMatrixLandingPoints(self, boundary = 0.03):
-        r, z = self.getlandingPointsTheta(boundary = boundary)
+    def getMatrixLandingPoints(self, radius = 0.02, boundary = 0.02):
+        r, z = self.getlandingPoints2D(radius= radius, boundary = boundary)
         landingpoint_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix))
         landingpoint_count_matrix = landingpoint_count_matrix.T
@@ -1850,8 +1850,8 @@ class Dataset:
 
 # Get the matrix of the take-off points
     # --> matrix
-    def getMatrixTakeOffPoints(self, boundary = 0.03):
-        r, z = self.getTakeOffPointsTheta(boundary = boundary)
+    def getMatrixTakeOffPoints(self, radius = 0.02, boundary = 0.02):
+        r, z = self.getTakeOffPoints2D(radius = radius, boundary = boundary)
         takeoffpoints_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix))
         takeoffpoints_count_matrix = takeoffpoints_count_matrix.T
@@ -1860,8 +1860,8 @@ class Dataset:
 
 # Get the matrix of the landing points of a given short-range cue condition
     # --> matrix
-    def getMatrixLandingPointsPerCondition(self, condition):
-        r, z = self.getlandingPointsThetaPerCondition(condition)
+    def getMatrixLandingPointsPerCondition(self, condition, radius = 0.02, boundary = 0.02):
+        r, z = self.getlandingPoints2DPerCondition(condition, radius= radius, boundary=boundary)
         landingpoint_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix))
         landingpoint_count_matrix = landingpoint_count_matrix.T
@@ -1870,13 +1870,13 @@ class Dataset:
 
 # Get the matrix of the resting times, with a possibility to change the upper/lower time boundary
     # --> 2 matrices: resting_time_matrix_np, resting_time_count_matrix_np
-    def getMatrixRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500, boundary = 0.03):
+    def getMatrixRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
         for trial_object in self.trialobjects:
-            resting_times = trial_object.getRestingTimeTrial(boundary=boundary)
-            points = trial_object.getRestingPointsTrial(boundary=boundary)
+            resting_times = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
+            points = trial_object.getRestingPointsTrial(radius=radius, boundary=boundary)
             for i, resting_time in enumerate(resting_times):
                 if lower_time_boundary < resting_time < upper_time_boundary:
                     w_list.append(resting_time)
@@ -1897,14 +1897,14 @@ class Dataset:
 
 # get matrix of the resting time of a given condition
     # --> 2 matrices: resting_time_matrix_np, resting_time_count_matrix_np
-    def getMatrixRestingTimePerCondition(self, condition):
+    def getMatrixRestingTimePerCondition(self, condition, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
         for trial_object in self.trialobjects:
             if trial_object.condition == condition:
-                resting_times = trial_object.getRestingTimeTrial()
-                points = trial_object.getRestingPointsTrial()
+                resting_times = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
+                points = trial_object.getRestingPointsTrial(radius=radius, boundary=boundary)
 
                 for resting_time in resting_times:
                     w_list.append(resting_time)
@@ -1928,7 +1928,7 @@ class Dataset:
 
 # Get the matrix of the probability that a mosquito that takes-off in a certain space ends in capture.
     # --> matrix
-    def getMatrixCaptureProbability(self, boundary = 0.03):
+    def getMatrixCaptureProbability(self, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
@@ -1947,7 +1947,7 @@ class Dataset:
 
 # Get the matrix of the probability that a mosquito that takes-off in a certain space lands again.
     # --> matrix
-    def getMatrixLandingAgainProbability(self, boundary = 0.03):
+    def getMatrixLandingAgainProbability(self, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         r_list, z_list, w_list = [], [], []
@@ -1955,7 +1955,7 @@ class Dataset:
             coordinates = trial_object.getCoordinatesLandingAgain(boundary=boundary)
             for coordinate in coordinates:
                 x, y, z = coordinate
-                r =  np.sqrt(x ** 2 + y ** 2)
+                r = np.sqrt(x ** 2 + y ** 2)
                 r_list.append(r)
                 z_list.append(z)
         landing_again_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r_list, z_list, bins=(
@@ -1967,10 +1967,10 @@ class Dataset:
 
 # 2D heatmaps #
 
-# Plot heatmap of all the landing points (not normalized by volume)
+# Plot heatmap of all the landing points (not normalized by volume!!!)
     # --> heatmap
-    def plotHeatmapLandingPoints(self):
-        r_list, z_list = self.getlandingPointsTheta()
+    def plotHeatmapLandingPoints(self, radius = 0.02, boundary = 0.02):
+        r_list, z_list = self.getlandingPoints2D(radius=radius, boundary=boundary)
         colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
         plt.hist2d(r_list, z_list, bins=[10, 40], cmap=custom_cmap)
@@ -1989,9 +1989,9 @@ class Dataset:
 
 # Plot heatmap of all the landing points, normalized by volume!
     # --> heatmap
-    def plotHeatmapLandingPointNormilized(self, boundary = 0.03):
+    def plotHeatmapLandingPointNormilized(self, radius = 0.02, boundary = 0.03):
         volume_matrix = self.getMatrixNormilizingVolume()
-        landingpoint_matrix = self.getMatrixLandingPoints(boundary = boundary)
+        landingpoint_matrix = self.getMatrixLandingPoints(radius = radius, boundary = boundary)
 
         density_matrix = landingpoint_matrix / volume_matrix
 
@@ -2020,10 +2020,10 @@ class Dataset:
 
 # Plots heatmap of all the resting points
     # --> heatmap
-    def plotHeatmapRestingPoints(self, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Density Heatmap: Resting points per volume'):
+    def plotHeatmapRestingPoints(self, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Density Heatmap: Resting points per volume', radius = 0.02, boundary = 0.02):
         volume_matrix = self.getMatrixNormilizingVolume()
         resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTimes(lower_time_boundary,
-                                                                                    upper_time_boundary)
+                                                                                    upper_time_boundary, radius = radius, boundary=boundary)
         density_matrix = resting_time_count_matrix / volume_matrix
 
         # plot matrix
@@ -2051,9 +2051,9 @@ class Dataset:
 
 # Plots heatmap of all the resting times
     # --> heatmap
-    def plotHeatmapRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Heatmap Resting Time'):
+    def plotHeatmapRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Heatmap Resting Time', radius = 0.02, boundary = 0.02):
         volume_matrix = self.getMatrixNormilizingVolume()
-        resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTimes(lower_time_boundary, upper_time_boundary)
+        resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTimes(lower_time_boundary, upper_time_boundary, radius = radius, boundary=boundary)
 
         resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix, nan=0.0)
 
@@ -2086,7 +2086,7 @@ class Dataset:
 
 # Plots heatmap of the resting times per short-range cue condition
     # --> heatmap
-    def plotHeatmapRestingTimePerCondition(self):
+    def plotHeatmapRestingTimePerCondition(self, radius = 0.02, boundary = 0.02):
         fig, ax = plt.subplots(1, 3, figsize=(10, 5))
         fig.suptitle('Density Heatmap: Average resting time per volume', fontsize = 16)
         X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
@@ -2096,7 +2096,7 @@ class Dataset:
         volume_matrix = self.getMatrixNormilizingVolume()
         conditions = ['without', 'with_heat', 'with_heat_water']
         for index, condition in enumerate(conditions):
-            resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTimePerCondition(condition)
+            resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTimePerCondition(condition, radius=radius, boundary=boundary)
             resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix, nan=0.0)
             resting_time_matrix_norm = resting_time_matrix / volume_matrix
             resting_time_matrix_average = np.divide(resting_time_matrix_norm, resting_time_count_matrix,
@@ -2119,10 +2119,10 @@ class Dataset:
 
 #  PLot heatmap of the probability that if a mosquito that takes-off in a spot it ends in capture
     # --> heatmap
-    def plotHeatmapLandingToCaptureProbability(self): #klopt geen ene kut van nu
+    def plotHeatmapLandingToCaptureProbability(self, radius = 0.02, boundary = 0.02): #klopt geen ene kut van nu
         volume_matrix = self.getMatrixNormilizingVolume()
         captured_coord_matrix = self.getMatrixCaptureProbability()
-        takeoffpoints_count_matrix = self.getMatrixTakeOffPoints()
+        takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(radius=radius, boundary=boundary)
 
         matrix_norm = captured_coord_matrix / volume_matrix
         matrix_average_norm = np.divide(matrix_norm, takeoffpoints_count_matrix,
@@ -2154,10 +2154,10 @@ class Dataset:
 
 #  PLot heatmap of the probability that if a mosquito that takes-off in a spot it lands again
     # --> heatmap
-    def plotHeatmapLandingAgainProbability(self): #klopt geen ene kut van nu
+    def plotHeatmapLandingAgainProbability(self, radius =0.02, boundary = 0.02): #klopt geen ene kut van nu
         volume_matrix = self.getMatrixNormilizingVolume()
-        landing_again_matrix = self.getMatrixLandingAgainProbability()
-        takeoffpoints_count_matrix = self.getMatrixTakeOffPoints()
+        landing_again_matrix = self.getMatrixLandingAgainProbability(boundary=boundary)
+        takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(radius=radius, boundary=boundary)
 
         matrix_norm = landing_again_matrix / volume_matrix
         matrix_average_norm = np.divide(matrix_norm, takeoffpoints_count_matrix,
@@ -2192,7 +2192,7 @@ class Dataset:
 # Sensitivity analysis / association analysis #
 
 # PLot a boxplot differentiating between different possible radius and the number of landing--take-off associations
-    def plotBoxplotRadiusAssociations(self):
+    def plotBoxplotRadiusAssociations(self, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
         pairs1 = []
@@ -2200,10 +2200,10 @@ class Dataset:
         pairs3 = []
         pairs4 = []
         for trial_object in self.trialobjects:
-            pairs1.append(trial_object.countPairsTrial(0.01))
-            pairs2.append(trial_object.countPairsTrial(0.02))
-            pairs3.append(trial_object.countPairsTrial(0.03))
-            pairs4.append(trial_object.countPairsTrial(0.04))
+            pairs1.append(trial_object.countPairsTrial(radius=0.01, boundary=boundary))
+            pairs2.append(trial_object.countPairsTrial(radius=0.02, boundary=boundary))
+            pairs3.append(trial_object.countPairsTrial(radius=0.03, boundary=boundary))
+            pairs4.append(trial_object.countPairsTrial(radius=0.04, boundary=boundary))
         data = [pairs1, pairs2, pairs3, pairs4]
         plt.boxplot(data)
         plt.title('Nr of of associated landings with take offs per radius threshold')
@@ -2211,25 +2211,27 @@ class Dataset:
         plt.ylabel('nr of associated landings with take offs')
         plt.show()
 
-# PLot boxplot showing the differences in amount between the landings, take-offs and landing--take-off associated pairs.
-    def plotBoxplotCountLandingTakeOffAccosiation(self):
+# PLot boxplot showing the differences in amount between the landings, take-offs, walkings, hoppings and landing--take-off associated pairs.
+    def plotBoxplotCountGroupsAccosiation(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None:
             self.trialobjects = self.getTrialObjects()
-        landings, takeoffs, associated_pairs = [], [], []
+        landings, takeoffs, associated_pairs, walkings, hoppings = [], [], [], [], []
         for trial_object in self.trialobjects:
-            landings.append(trial_object.countLandingsTrial())
-            takeoffs.append(trial_object.countTakeOffsTrial())
-            associated_pairs.append(trial_object.countPairsTrial())
-        data = [landings, takeoffs, associated_pairs]
+            landings.append(trial_object.countLandingsTrial(radius=radius,boundary=boundary))
+            takeoffs.append(trial_object.countTakeOffTrial(radius=radius,boundary=boundary))
+            walkings.append(trial_object.countWalkingTracksTrial(radius=radius,boundary=boundary))
+            hoppings.append(trial_object.countHoppingsTrial(boundary=boundary))
+            associated_pairs.append(trial_object.countPairsTrial(radius = radius, boundary = boundary))
+        data = [landings, takeoffs, hoppings, walkings, associated_pairs]
         plt.boxplot(data)
-        plt.title('Boxplot of the number of landings, take-offs and landing / take_off pairs')
-        plt.xticks([1, 2, 3], ['Landings', 'Take-offs', 'associated pairs'])
-        plt.ylabel('nr of associated landings with take offs')
+        plt.title('Boxplot of the number of landings, take-offs, hoppings, walkings and landing / take_off pairs')
+        plt.xticks([1, 2, 3, 4, 5], ['Landings', 'Take-offs', 'Hoppings', 'Walkings', 'Pairs'])
+        plt.ylabel('Amount')
         plt.show()
 
 # PLot sub heatmaps with different boundary options to see if the landing point results change
     # --> 4 subplots from 0.01 to 0.04 m width
-    def plotHeatmapLandingPointsBoundaryAssociationTest(self):
+    def plotHeatmapLandingPointsBoundaryAssociationTest(self, radius = 0.02):
         volume_matrix = self.getMatrixNormilizingVolume()
 
         boundaries = [0.01, 0.02, 0.03, 0.04]
@@ -2243,7 +2245,7 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
         for i, ax in enumerate(axs):
-            density_matrix = self.getMatrixLandingPoints(boundary=boundaries[i]) / volume_matrix
+            density_matrix = self.getMatrixLandingPoints(radius = radius, boundary=boundaries[i]) / volume_matrix
             heatmap = ax.pcolormesh(X, Y, density_matrix, cmap=custom_cmap)
             ax.set_title(titles[i])
             ax.set_xlabel('r')
@@ -2264,7 +2266,7 @@ class Dataset:
 
 # PLot sub heatmaps with different boundary options to see if the resting points result change
     # --> 4 subplots from 0.01 to 0.04 m width
-    def plotHeatmapRestingPointsBoundaryAssociationTest(self, lower_time_boundary = 0, upper_time_boundary = 1500):
+    def plotHeatmapRestingPointsBoundaryAssociationTest(self, lower_time_boundary = 0, upper_time_boundary = 1500, radius = 0.02):
         volume_matrix = self.getMatrixNormilizingVolume()
 
         boundaries = [0.01, 0.02, 0.03, 0.04]
@@ -2278,7 +2280,7 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
         for i, ax in enumerate(axs):
-            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary, boundary=boundaries[i])
+            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary, radius = radius, boundary=boundaries[i])
             density_matrix =  resting_time_count_matrix_np/ volume_matrix
             heatmap = ax.pcolormesh(X, Y, density_matrix, cmap=custom_cmap)
             ax.set_title(titles[i])
@@ -2299,9 +2301,8 @@ class Dataset:
 
 # PLot sub heatmaps with different area_boundary options to see if the resting time result change
 
-    def plotHeatmapRestingTimesBoundaryAssociationTest(self, lower_time_boundary = 0, upper_time_boundary = 1500):
+    def plotHeatmapRestingTimesBoundaryAssociationTest(self, lower_time_boundary = 0, upper_time_boundary = 1500, radius = 0.02):
         volume_matrix = self.getMatrixNormilizingVolume()
-
         boundaries = [0.01, 0.02, 0.03, 0.04]
         titles = ['1 cm', '2 cm', '3 cm', '4 cm']
 
@@ -2313,7 +2314,7 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
         for i, ax in enumerate(axs):
-            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary,boundary=boundaries[i])
+            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary, radius = radius,boundary=boundaries[i])
             resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix_np, nan=0.0)
             resting_time_matrix_norm = resting_time_matrix_np / volume_matrix
             resting_time_matrix_average = np.divide(resting_time_matrix_norm, resting_time_count_matrix,
@@ -2336,7 +2337,7 @@ class Dataset:
         plt.show()
 
 # PLot sub heatmaps with different area_boundary options to see if the probability to land again results change
-    def plotHeatmapLandingToCaptureProbabilityAssociationTest(self):
+    def plotHeatmapLandingToCaptureProbabilityAssociationTest(self, radius = 0.02):
         volume_matrix = self.getMatrixNormilizingVolume()
         boundaries = [0.01, 0.02, 0.03, 0.04]
         titles = ['1 cm', '2 cm', '3 cm', '4 cm']
@@ -2350,7 +2351,7 @@ class Dataset:
 
         for i, ax in enumerate(axs):
             captured_coord_matrix = self.getMatrixCaptureProbability(boundary=boundaries[i])
-            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(boundary=boundaries[i])
+            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(radius=radius,boundary=boundaries[i])
 
             matrix_norm = captured_coord_matrix / volume_matrix
             matrix_average_norm = np.divide(matrix_norm, takeoffpoints_count_matrix,
@@ -2375,7 +2376,7 @@ class Dataset:
 
 
 # PLot sub heatmaps with different area_boundary options to see if the probability to get captured after take-off change
-    def plotHeatmapLandingAgainProbabilityAssociationTest(self):
+    def plotHeatmapLandingAgainProbabilityAssociationTest(self, radius = 0.02):
         volume_matrix = self.getMatrixNormilizingVolume()
         boundaries = [0.01, 0.02, 0.03, 0.04]
         titles = ['1 cm', '2 cm', '3 cm', '4 cm']
@@ -2388,7 +2389,7 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
         for i, ax in enumerate(axs):
             landing_again_matrix = self.getMatrixLandingAgainProbability(boundary=boundaries[i])
-            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(boundary=boundaries[i])
+            takeoffpoints_count_matrix = self.getMatrixTakeOffPoints(radius = radius, boundary=boundaries[i])
             matrix_norm = landing_again_matrix / volume_matrix
             matrix_average_norm = np.divide(matrix_norm, takeoffpoints_count_matrix,
                                             where=takeoffpoints_count_matrix != 0)
