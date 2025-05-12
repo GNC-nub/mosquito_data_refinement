@@ -83,7 +83,7 @@ trial.plotMultipleTracks([728, 478])
 # plot resting time
 trial.plotDisplacementViolin(radius=radius_boundary, boundary=landing_boundary)
 trial.plotRestingTimesViolinTrial(radius=radius_boundary, boundary=landing_boundary)
-
+'''
 
 
 
@@ -186,13 +186,17 @@ percentage_land_again = dataset.calculatingPercentagesLandingAgain()
 percentage_land_to_capture = dataset.calculatingPercentagesLandingToCapture()
 print(f'\nPercentage of take offs that land again is {round(percentage_land_again, 2)} %\nPercentage of take offs that lead to capture {round(percentage_land_to_capture, 2)} %')
 
-
+'''
 # association tests #
 # Boxplots
 dataset.plotQuatificationHistogramTracks(radius=radius_boundary, boundary=landing_boundary)
-'''
+
 dataset.plotBoxplotRadiusAssociations()  # Landing -- take-off pairing radius
 dataset.plotBoxplotCountGroupsAccosiation()  # Landing -- take-off, pairing, hoppings and walking counting
+
+
+dataset.plotDisplacementViolin(radius=radius_boundary, boundary=landing_boundary)
+dataset.plotRestingTimesViolinTrial(radius=radius_boundary, boundary=landing_boundary)
 
 # PLot subplots heatmaps with different area_boundary options to see if the results change --> 0.01 - 0.04 m
 dataset.plotHeatmapLandingPointsBoundaryAssociationTest()
@@ -202,3 +206,4 @@ dataset.plotHeatmapRestingTimesBoundaryAssociationTest()
 
 dataset.plotHeatmapLandingToCaptureProbabilityAssociationTest()
 dataset.plotHeatmapLandingAgainProbabilityAssociationTest()
+'''
