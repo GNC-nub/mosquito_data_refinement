@@ -433,9 +433,9 @@ class Trial:
         walking_tracks = []
         paired_tracks = []
         for track_object in self.track_objects:
-            landing_tracks.append([track_object.track_num, track_object.getLandingTrack(boundary=self.boundary)])
-            take_off_tracks.append([track_object.track_num, track_object.getTakeOffTrack(boundary=self.boundary)])
-            walking_tracks.append([track_object.track_num, track_object.getWalkingTrack(boundary=self.boundary)])
+            landing_tracks.append([track_object.track_num, track_object.getLandingTrack(boundary=boundary)])
+            take_off_tracks.append([track_object.track_num, track_object.getTakeOffTrack(boundary=boundary)])
+            walking_tracks.append([track_object.track_num, track_object.getWalkingTrack(boundary=boundary)])
 
         potential_new_landing = []
         potential_new_take_off =[]
@@ -629,6 +629,7 @@ class Trial:
         take_offs = self.getTakeOffTracksTrial(radius=radius, boundary=boundary)
         hoppings = self.getHoppingsTrackTrial(boundary=boundary)
         return landings + take_offs + hoppings
+
     def initializeLandingTracksTrial(self, radius = 0.02, boundary = 0.02):
         if self.landing_tracks == None or self.boundary != boundary or self.radius != radius:
             self.radius = radius
@@ -705,6 +706,26 @@ class Trial:
             self.resting_points = self.getRestingPointsTrial(radius=radius, boundary=boundary)
             self.boundary = boundary
             self.radius = radius
+
+    def getRestingPointsANDTimesPairs(self, radius=0.02, boundary=0.02):
+        tracks = self.getPairedTracksTrial(radius=radius, boundary=boundary)
+        resting_points_times = []
+        for track in tracks:
+            x, y, z, t = track
+            duration = t[-1] - t[0]
+            x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
+            resting_points_times.append([x_point, y_point, z_point, duration])
+        return resting_points_times
+    def getRestingPointsANDTimesTouchdown(self, radius = 0.02, boundary = 0.02):
+        tracks = self.getTouchdownsTrial(radius=radius, boundary=boundary)
+        resting_points_times = []
+        for track in tracks:
+            x, y, z, t = track
+            duration = t[-1] - t[0]
+            x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
+            resting_points_times.append([x_point, y_point, z_point, duration])
+        return resting_points_times
+
 
 
 # Only get the resting time list of a trial
@@ -1303,6 +1324,7 @@ class Dataset:
                 landing_count_per_trial.append(trial_object.countLandingsTrial(radius=radius, boundary=boundary))
             self.landing_all_trials = landing_count_per_trial
 
+
 # Get the trial information as objects in a list
     # --> list of all the trials (inc their information)
     def getTrialObjects(self):
@@ -1429,8 +1451,65 @@ class Dataset:
         plt.show()
 
 # Landing -- take_off #
+    def getTouchdowns(self, radius = 0.02, boundary = 0.02):
+        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
+            self.radius = radius
+            self.boundary = boundary
+            self.trialobjects = self.getTrialObjects()
+        dataset = []
+        for trial_object in self.trialobjects:
+            trial = trial_object.getTouchdownsTrial(radius=radius, boundary=boundary)
+            dataset += trial
+        return dataset
 
-# Get landing coordinates in 2D in two lists: r and z
+    def getRestingPointsANDTimesTouchdown2D(self, radius = 0.02, boundary = 0.02):
+        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
+            self.radius = radius
+            self.boundary = boundary
+            self.trialobjects = self.getTrialObjects()
+        r_list = []
+        z_list = []
+        resting_times = []
+        for trial_object in self.trialobjects:
+            trial = trial_object.getRestingPointsANDTimesTouchdown(radius=radius, boundary=boundary)
+            for point in trial:
+                x, y, z, time = point
+                r = np.sqrt(x ** 2 + y ** 2)
+                r_list.append(r)
+                z_list.append(z)
+                resting_times.append(time)
+        return r_list, z_list, resting_times
+
+    def getPairs(self, radius= 0.02, boundary = 0.02):
+        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
+            self.radius = radius
+            self.boundary = boundary
+            self.trialobjects = self.getTrialObjects()
+        dataset = []
+        for trial_object in self.trialobjects:
+            trial = trial_object.getPairedTracksTrial(radius=radius, boundary=boundary)
+            dataset += trial
+        return dataset
+
+
+    def getRestingPointsANDTImes2DPairs(self, radius = 0.02, boundary = 0.02):
+        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
+            self.radius = radius
+            self.boundary = boundary
+            self.trialobjects = self.getTrialObjects()
+        r_list = []
+        z_list = []
+        resting_times = []
+        for trial_object in self.trialobjects:
+            trial = trial_object.getRestingPointsANDTimesPairs(radius=radius, boundary=boundary)
+            for point in trial:
+                x, y, z, time = point
+                r = np.sqrt(x ** 2 + y ** 2)
+                r_list.append(r)
+                z_list.append(z)
+                resting_times.append(time)
+        return r_list, z_list, resting_times
+        # Get landing coordinates in 2D in two lists: r and z
     # ---> list r , list z
     def getlandingPoints2D(self, radius = 0.02, boundary = 0.02):
         if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
@@ -1448,6 +1527,21 @@ class Dataset:
                 z_list.append(z)
         return r_list, z_list
 
+    def getRestingPoints2D(self, radius = 0.02, boundary = 0.02):
+        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
+            self.radius = radius
+            self.boundary = boundary
+            self.trialobjects = self.getTrialObjects()
+        r_list = []
+        z_list = []
+        for trial_object in self.trialobjects:
+            trial = trial_object.getRestingPointsTrial(radius=radius, boundary=boundary)
+            for coordinate in trial:
+                x, y, z = coordinate
+                r = np.sqrt(x ** 2 + y ** 2)
+                r_list.append(r)
+                z_list.append(z)
+        return r_list, z_list
 
 # Get take off coordinates in 2D in two lists: r and z
     # ---> list r , list z
@@ -1999,9 +2093,7 @@ class Dataset:
         f_stat, p_value = self.testAnovaConditions(data)
         if p_value < 0.05:
             list_significant_pairs = self.testTukeysHSDConditions(data)
-            pair1 = f'{list_significant_pairs[0][0]} and {list_significant_pairs[0][1]}'
-            pair2 = f'{list_significant_pairs[1][0]} and {list_significant_pairs[1][1]}'
-            plt.figtext(0.01, 0.05, f'Significant differences between:\n{pair1}\n{pair2}', size=5)
+            plt.figtext(0.01, 0.05, f'Significant differences!', size=5)
         else:
             plt.figtext(0.01, 0.09, 'No significant differences\nbetween any group', size=5)
 
@@ -2035,6 +2127,8 @@ class Dataset:
         landingpoint_count_matrix_np = np.array(landingpoint_count_matrix)
         return landingpoint_count_matrix_np
 
+
+
 # Get the matrix of the take-off points
     # --> matrix
     def getMatrixTakeOffPoints(self, radius = 0.02, boundary = 0.02):
@@ -2044,6 +2138,43 @@ class Dataset:
         takeoffpoints_count_matrix = takeoffpoints_count_matrix.T
         takeoffpoints_count_matrix_np = np.array(takeoffpoints_count_matrix)
         return takeoffpoints_count_matrix_np
+
+
+    def getMatrixRestingTouchdownPoints(self, radius = 0.02, boundary = 0.02):
+        r, z, t = self.getRestingPointsANDTimesTouchdown2D(radius=radius, boundary=boundary)
+        touchdown_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
+            self.r_edges_matrix, self.z_edges_matrix))
+        touchdown_count_matrix = touchdown_count_matrix.T
+        touchdown_count_matrix_np = np.array(touchdown_count_matrix)
+        return touchdown_count_matrix_np
+
+
+    def getMatrixRestingTouchdownTimes(self, radius=0.02, boundary=0.02, lower_time_boundary = 0, upper_time_boundary = 1500):
+        r, z, t = self.getRestingPointsANDTimesTouchdown2D(radius=radius, boundary=boundary)
+        resting_time_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
+            self.r_edges_matrix, self.z_edges_matrix), weights=t)
+        resting_time_matrix = resting_time_matrix.T
+        resting_time_matrix_np = np.array(resting_time_matrix)
+
+        resting_time_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
+            self.r_edges_matrix, self.z_edges_matrix))
+        resting_time_count_matrix = resting_time_count_matrix.T
+        resting_time_count_matrix_np = np.array(resting_time_count_matrix)
+        return resting_time_matrix_np, resting_time_count_matrix_np
+
+
+    def getgetMatrixRestingTimesPairs(self, radius=0.02, boundary=0.02, lower_time_boundary = 0, upper_time_boundary = 1500):
+        r, z, t = self.getRestingPointsANDTImes2DPairs(radius=radius, boundary=boundary)
+        resting_time_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
+            self.r_edges_matrix, self.z_edges_matrix), weights=t)
+        resting_time_matrix = resting_time_matrix.T
+        resting_time_matrix_np = np.array(resting_time_matrix)
+
+        resting_time_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
+            self.r_edges_matrix, self.z_edges_matrix))
+        resting_time_count_matrix = resting_time_count_matrix.T
+        resting_time_count_matrix_np = np.array(resting_time_count_matrix)
+        return resting_time_matrix_np, resting_time_count_matrix_np
 
 # Get the matrix of the landing points of a given short-range cue condition
     # --> matrix
@@ -2237,7 +2368,7 @@ class Dataset:
     # --> heatmap
     def plotHeatmapRestingTimes(self, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Heatmap Resting Time', radius = 0.02, boundary = 0.02):
         volume_matrix = self.getMatrixNormilizingVolume()
-        resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTimes(lower_time_boundary, upper_time_boundary, radius = radius, boundary=boundary)
+        resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTimes(lower_time_boundary = lower_time_boundary, upper_time_boundary = upper_time_boundary, radius = radius, boundary=boundary)
 
         resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix, nan=0.0)
 
@@ -2298,6 +2429,179 @@ class Dataset:
             ax[index].set_ylim(-0.45, 0.1)
             ax[index].set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
         fig.colorbar(c, ax=ax, orientation = 'vertical', label='Density resting time (s/m$^3$)')
+        plt.show()
+
+
+
+    def plotRestingPointsTouchdown(self, radius = 0.02, boundary = 0.02, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Heatmap Resting Points touchdowns'):
+        volume_matrix = self.getMatrixNormilizingVolume()
+        resting_time_count_matrix = self.getMatrixRestingTouchdownPoints(radius=radius, boundary=boundary)
+        density_matrix = resting_time_count_matrix / volume_matrix
+        # plot matrix
+        fig = plt.figure()
+        ax = fig.add_subplot(132, title=title, aspect='equal')
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+        c = ax.pcolormesh(X, Y, density_matrix, cmap=custom_cmap)
+        ax.set_facecolor('white')
+
+        plt.colorbar(c, ax=ax, fraction=0.065, pad=0.13, label='Density (points/m$^3$)')
+        plt.xlabel('r coordinates')
+        plt.ylabel('z coordinates')
+
+        # plot trap
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+        plt.xlim(0, 0.3)
+        plt.ylim(-0.45, 0.1)
+        plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
+        plt.show()  # nor #ormil
+
+
+    def plotHeatmapRestingTimesTouchdown(self, radius = 0.02, boundary = 0.02, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Heatmap Resting Time touchdowns'):
+        volume_matrix = self.getMatrixNormilizingVolume()
+        resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTouchdownTimes(radius=radius,
+                                                                                    boundary=boundary, lower_time_boundary = lower_time_boundary,
+                                                                                    upper_time_boundary = upper_time_boundary)
+        resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix, nan=0.0)
+
+        resting_time_matrix_norm = resting_time_matrix / volume_matrix
+        resting_time_matrix_average = np.divide(resting_time_matrix_norm, resting_time_count_matrix,
+                                                where=resting_time_count_matrix != 0)
+
+        # plot matrix
+        fig = plt.figure()
+        ax = fig.add_subplot(132, title=title, aspect='equal')
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+        c = ax.pcolormesh(X, Y, resting_time_matrix_average, cmap=custom_cmap)
+        ax.set_facecolor('white')
+
+        plt.colorbar(c, ax=ax, fraction=0.065, pad=0.13, label='Density resting time (s/m$^3$)')
+        plt.xlabel('r coordinates')
+        plt.ylabel('z coordinates')
+
+        # plot trap
+        inlet_r, inlet_z, body_r, body_z = getTrap2D()
+        plt.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+        plt.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+        plt.xlim(0, 0.3)
+        plt.ylim(-0.45, 0.1)
+        plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
+        plt.show()
+
+
+    def plotHeatmapRestingTimesTouchdownVSPairs(self, radius = 0.02, boundary = 0.02, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Heatmap Resting Time touchdowns'):
+        volume_matrix = self.getMatrixNormilizingVolume()
+        touch_time_matrix, touch_time_count_matrix = self.getMatrixRestingTouchdownTimes(radius=radius,
+                                                                                             boundary=boundary,
+                                                                                             lower_time_boundary=lower_time_boundary, upper_time_boundary=upper_time_boundary)
+        touch_time_count_matrix = np.nan_to_num(touch_time_count_matrix, nan=0.0)
+        touch_time_matrix_norm = touch_time_matrix / volume_matrix
+        touch_time_matrix_average = np.divide(touch_time_matrix_norm, touch_time_count_matrix,
+                                                where=touch_time_count_matrix != 0)
+
+        pair_time_matrix, pair_time_count_matrix = self.getgetMatrixRestingTimesPairs(radius=radius,
+                                                                                             boundary=boundary,
+                                                                                             lower_time_boundary=lower_time_boundary,
+                                                                                             upper_time_boundary=upper_time_boundary)
+        pair_time_count_matrix = np.nan_to_num(pair_time_count_matrix, nan=0.0)
+
+        pair_time_matrix_norm = pair_time_matrix / volume_matrix
+        pair_time_matrix_average = np.divide(pair_time_matrix_norm, pair_time_count_matrix,
+                                                where=pair_time_count_matrix != 0)
+
+        matrices = [touch_time_matrix_average, pair_time_matrix_average]
+        titles = ['Touchdown', 'Pairs']
+        fig, axs = plt.subplots(1, 2)
+        axs = axs.flatten()
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+        for i, ax in enumerate(axs):
+            heatmap = ax.pcolormesh(X, Y, matrices[1], cmap=custom_cmap)
+            ax.set_title(titles[i])
+            ax.set_xlabel('r')
+            ax.set_ylabel('z')
+            ax.set_facecolor('white')
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
+            fig.colorbar(heatmap, ax=ax, fraction=0.065, pad=0.13, label='Density (points/m$^3$)')
+            ax.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+            ax.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+            ax.set_xlim(0, 0.3)
+            ax.set_ylim(-0.45, 0.1)
+            ax.set_aspect('equal', adjustable='box')
+
+        fig.suptitle('Heatmaps touchdown vs pairs \nResting points per volume')
+        fig.tight_layout()
+        plt.show()
+
+
+    def plotHeatmapRestingPointsVaryingTimes(self, times, radius = 0.02, boundary = 0.02):
+        lower1, upper1, lower2, upper2 = times
+        matrix1 = self.getMatrixLandingPoints(radius=radius, boundary=boundary, lower_time_boundary=lower1,
+                                             upper_time_boundary=upper1)
+        matrix2 = self.getMatrixRestingTimes(radius=radius, boundary=boundary, lower_time_boundary=lower2,
+                                             upper_time_boundary=upper2)
+        matrices = [matrix1, matrix2]
+        titles = ['Touchdown', 'Longer rests']
+        fig, axs = plt.subplots(1, 2)
+        axs = axs.flatten()
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+        for i, ax in enumerate(axs):
+            heatmap = ax.pcolormesh(X, Y, matrices[1], cmap=custom_cmap)
+            ax.set_title(titles[i])
+            ax.set_xlabel('r')
+            ax.set_ylabel('z')
+            ax.set_facecolor('white')
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
+            fig.colorbar(heatmap, ax=ax, fraction=0.065, pad=0.13, label='Density (points/m$^3$)')
+            ax.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+            ax.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+            ax.set_xlim(0, 0.3)
+            ax.set_ylim(-0.45, 0.1)
+            ax.set_aspect('equal', adjustable='box')
+
+        fig.suptitle(
+            f'Heatmaps touchdown vs longer rests \nResting points per volume \n ({lower1} - {upper1}s and {lower2} - {upper2}s)')
+        fig.tight_layout()
+        plt.show()
+
+    def plotHeatmapRestingTimesVaryingTimes(self, times, radius = 0.02, boundary = 0.02):
+        lower1, upper1, lower2, upper2 = times
+        matrix1 = self.getMatrixRestingTimes(radius = radius, boundary=boundary, lower_time_boundary=lower1, upper_time_boundary=upper1)
+        matrix2 = self.getMatrixRestingTimes(radius=radius, boundary=boundary, lower_time_boundary=lower2,
+                                             upper_time_boundary=upper2)
+        matrices = [matrix1, matrix2]
+        titles = ['Touchdown', 'Longer rests']
+        fig, axs = plt.subplots(1, 2)
+        axs = axs.flatten()
+        X, Y = np.meshgrid(self.r_edges_matrix, self.z_edges_matrix)
+        colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]  # White -> Yellow -> Red -> Dark Red
+        custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
+        for i, ax in enumerate(axs):
+            heatmap = ax.pcolormesh(X, Y, matrices[1], cmap=custom_cmap)
+            ax.set_title(titles[i])
+            ax.set_xlabel('r')
+            ax.set_ylabel('z')
+            ax.set_facecolor('white')
+            inlet_r, inlet_z, body_r, body_z = getTrap2D()
+            fig.colorbar(heatmap, ax=ax, fraction=0.065, pad=0.13, label='Density (points/m$^3$)')
+            ax.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+            ax.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+            ax.set_xlim(0, 0.3)
+            ax.set_ylim(-0.45, 0.1)
+            ax.set_aspect('equal', adjustable='box')
+
+        fig.suptitle(f'Heatmaps touchdown vs longer rests \nResting points per volume \n ({lower1} - {upper1}s and {lower2} - {upper2}s)')
+        fig.tight_layout()
         plt.show()
 
 

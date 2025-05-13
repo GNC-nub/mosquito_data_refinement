@@ -83,7 +83,7 @@ trial.plotMultipleTracks([728, 478])
 # plot resting time
 trial.plotDisplacementViolin(radius=radius_boundary, boundary=landing_boundary)
 trial.plotRestingTimesViolinTrial(radius=radius_boundary, boundary=landing_boundary)
-'''
+
 
 
 
@@ -135,6 +135,7 @@ dataset.plotHistogramRestingTimeCondition('without')
 dataset.plotHistogramRestingTimeCondition('with_heat')
 dataset.plotHistogramRestingTimeCondition('with_heat_water')
 # Resting time violin plot with all conditions visualized
+'''
 dataset.plotViolinplotRestingTimeCondition()
 
 
@@ -142,6 +143,13 @@ dataset.plotViolinplotRestingTimeCondition()
 
 # Landing points
 dataset.plotHeatmapLandingPointNormilized()
+
+dataset.plotRestingPointsTouchdown()
+dataset.plotHeatmapRestingTimesTouchdown()
+dataset.plotHeatmapRestingTimesTouchdownVSPairs()
+
+
+dataset.plotHeatmapRestingTimesVaryingTimes([0,1, 1, 1500]) # touchdown: 0-1s, longer rests: 1-1500s
 
 # Resting points (all)
 dataset.plotHeatmapRestingPoints(title = 'Density Resting Points all.')
@@ -186,7 +194,7 @@ percentage_land_again = dataset.calculatingPercentagesLandingAgain()
 percentage_land_to_capture = dataset.calculatingPercentagesLandingToCapture()
 print(f'\nPercentage of take offs that land again is {round(percentage_land_again, 2)} %\nPercentage of take offs that lead to capture {round(percentage_land_to_capture, 2)} %')
 
-'''
+
 # association tests #
 # Boxplots
 dataset.plotQuatificationHistogramTracks(radius=radius_boundary, boundary=landing_boundary)
@@ -206,4 +214,3 @@ dataset.plotHeatmapRestingTimesBoundaryAssociationTest()
 
 dataset.plotHeatmapLandingToCaptureProbabilityAssociationTest()
 dataset.plotHeatmapLandingAgainProbabilityAssociationTest()
-'''
