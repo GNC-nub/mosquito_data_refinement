@@ -2127,7 +2127,13 @@ class Dataset:
         landingpoint_count_matrix_np = np.array(landingpoint_count_matrix)
         return landingpoint_count_matrix_np
 
-
+    def getMatrixRestingPoints(self, radius = 0.02, boundary = 0.02):
+        r, z = self.getRestingPoints2D(radius=radius, boundary=boundary)
+        restingpoint_count_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
+            self.r_edges_matrix, self.z_edges_matrix))
+        restingpoint_count_matrix = restingpoint_count_matrix.T
+        restingpoint_count_matrix_np = np.array(restingpoint_count_matrix)
+        return restingpoint_count_matrix_np
 
 # Get the matrix of the take-off points
     # --> matrix
@@ -2149,7 +2155,7 @@ class Dataset:
         return touchdown_count_matrix_np
 
 
-    def getMatrixRestingTouchdownTimes(self, radius=0.02, boundary=0.02, lower_time_boundary = 0, upper_time_boundary = 1500):
+    def getMatrixRestingTouchdownTimes(self, radius=0.02, boundary=0.02):
         r, z, t = self.getRestingPointsANDTimesTouchdown2D(radius=radius, boundary=boundary)
         resting_time_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix), weights=t)
@@ -2163,7 +2169,8 @@ class Dataset:
         return resting_time_matrix_np, resting_time_count_matrix_np
 
 
-    def getgetMatrixRestingTimesPairs(self, radius=0.02, boundary=0.02, lower_time_boundary = 0, upper_time_boundary = 1500):
+    def getMatrixRestingTimesPairs(self, radius=0.02, boundary=0.02):
+
         r, z, t = self.getRestingPointsANDTImes2DPairs(radius=radius, boundary=boundary)
         resting_time_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix), weights=t)
@@ -2463,9 +2470,7 @@ class Dataset:
 
     def plotHeatmapRestingTimesTouchdown(self, radius = 0.02, boundary = 0.02, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Heatmap Resting Time touchdowns'):
         volume_matrix = self.getMatrixNormilizingVolume()
-        resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTouchdownTimes(radius=radius,
-                                                                                    boundary=boundary, lower_time_boundary = lower_time_boundary,
-                                                                                    upper_time_boundary = upper_time_boundary)
+        resting_time_matrix, resting_time_count_matrix = self.getMatrixRestingTouchdownTimes(radius=radius, boundary=boundary)
         resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix, nan=0.0)
 
         resting_time_matrix_norm = resting_time_matrix / volume_matrix
@@ -2496,20 +2501,17 @@ class Dataset:
         plt.show()
 
 
-    def plotHeatmapRestingTimesTouchdownVSPairs(self, radius = 0.02, boundary = 0.02, lower_time_boundary = 0, upper_time_boundary = 1500, title = 'Heatmap Resting Time touchdowns'):
+    def plotHeatmapRestingTimesTouchdownVSPairs(self, radius = 0.02, boundary = 0.02, title = 'Heatmap Resting Time touchdowns'):
         volume_matrix = self.getMatrixNormilizingVolume()
         touch_time_matrix, touch_time_count_matrix = self.getMatrixRestingTouchdownTimes(radius=radius,
-                                                                                             boundary=boundary,
-                                                                                             lower_time_boundary=lower_time_boundary, upper_time_boundary=upper_time_boundary)
+                                                                                             boundary=boundary)
         touch_time_count_matrix = np.nan_to_num(touch_time_count_matrix, nan=0.0)
         touch_time_matrix_norm = touch_time_matrix / volume_matrix
         touch_time_matrix_average = np.divide(touch_time_matrix_norm, touch_time_count_matrix,
                                                 where=touch_time_count_matrix != 0)
 
-        pair_time_matrix, pair_time_count_matrix = self.getgetMatrixRestingTimesPairs(radius=radius,
-                                                                                             boundary=boundary,
-                                                                                             lower_time_boundary=lower_time_boundary,
-                                                                                             upper_time_boundary=upper_time_boundary)
+        pair_time_matrix, pair_time_count_matrix = self.getMatrixRestingTimesPairs(radius=radius,
+                                                                                             boundary=boundary)
         pair_time_count_matrix = np.nan_to_num(pair_time_count_matrix, nan=0.0)
 
         pair_time_matrix_norm = pair_time_matrix / volume_matrix
@@ -2544,9 +2546,9 @@ class Dataset:
 
     def plotHeatmapRestingPointsVaryingTimes(self, times, radius = 0.02, boundary = 0.02):
         lower1, upper1, lower2, upper2 = times
-        matrix1 = self.getMatrixLandingPoints(radius=radius, boundary=boundary, lower_time_boundary=lower1,
+        matrix1 = self.getMatrixRestingPoints(radius=radius, boundary=boundary, lower_time_boundary=lower1,
                                              upper_time_boundary=upper1)
-        matrix2 = self.getMatrixRestingTimes(radius=radius, boundary=boundary, lower_time_boundary=lower2,
+        matrix2 = self.getMatrixRestingPoints(radius=radius, boundary=boundary, lower_time_boundary=lower2,
                                              upper_time_boundary=upper2)
         matrices = [matrix1, matrix2]
         titles = ['Touchdown', 'Longer rests']
