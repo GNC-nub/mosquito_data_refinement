@@ -159,6 +159,14 @@ class Track:
         if capturing_area(self.x[-1], self.y[-1], self.z[-1]):
             bool = True
         return bool
+
+    def boolResting(self, boundary = 0.02):
+        bool = False
+        for i in range(len(self.x)):
+            if landing_area(self.x[i], self.y[i], self.z[i], boundary=boundary):
+                bool = True
+        return bool
+
     def functionVelocity(self, x, delta_t):
         v = []
         v1 = ( -3 * x[0] + 4 * x[1] - x[2] )  / 2 * delta_t
@@ -815,6 +823,18 @@ class Trial:
     def countPairsTrial(self, radius = 0.02, boundary = 0.02):
         return len(self.getPairedTracksTrial(radius=radius, boundary=boundary))
 
+
+    def countALlTrackEnteringBoundary(self, boundary= 0.02):
+        if not self.take_off_points or self.boundary != boundary:
+            self.initializeTakeOffTracksTrial(boundary=boundary)
+            self.boundary = boundary
+        count = 0
+        for track_object in self.track_objects:
+            if track_object.boolResting(boundary = boundary):
+                count += 1
+        return count
+
+
     def countWalkingTracksTrial(self, radius = 0.02, boundary = 0.02):
         self.initializeWalkingTrackTrial(radius=radius, boundary=boundary)
         return len(self.walking_tracks)
@@ -944,8 +964,9 @@ class Trial:
             self.track_objects = self.getTrackObjects()
         take_off_coordinates = []
         for track_object in self.track_objects:
-            if capturing_area(track_object.x[-1], track_object.y[-1], track_object.z[-1], boundary=boundary):
-                x, y, z, t = track_object.getRestingPointsTrack(boundary=boundary)[-1]
+            resting_points = track_object.getRestingPointsTrack(boundary=boundary)
+            if capturing_area(track_object.x[-1], track_object.y[-1], track_object.z[-1], boundary=boundary) and len(resting_points) > 0:
+                x, y, z, t = resting_points[-1]
                 take_off_coordinates.append([x, y, z])
         return take_off_coordinates
 
@@ -1428,6 +1449,8 @@ class Dataset:
     def countAllTracks(self):
         return sum(self.getNumTracksPerTrial())
 
+
+
     def plotQuatificationHistogramTracks(self, radius = 0.02, boundary=0.02):
         walkings = self.countWalkings(radius=radius, boundary=boundary)
         landings = self.countLandings(radius=radius, boundary=boundary)
@@ -1555,7 +1578,7 @@ class Dataset:
         for trial_object in self.trialobjects:
             trial_object.initializeTakeOffPoints(radius=radius, boundary=boundary)
             for coordinate in trial_object.take_off_points:
-                x, y, z, time = coordinate
+                x, y, z = coordinate
                 r = np.sqrt(x ** 2 + y ** 2)
                 r_list.append(r)
                 z_list.append(z)
@@ -1849,17 +1872,16 @@ class Dataset:
 
 # Gives the percentage of landings after take-off (from the total take-offs)
     # --> num / amount
-    def calculatingPercentagesLandingAgain(self, radius = 0.02, boundary = 0.02):
-        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
-            self.radius = radius
+    def calculatingPercentagesLandingAgain(self, boundary = 0.02):
+        if self.trialobjects == None  or self.boundary != boundary:
             self.boundary = boundary
             self.trialobjects = self.getTrialObjects()
-        total_take_offs = 0
+        total_in_boundary = 0
         land_again = 0
         for trial_object in self.trialobjects:
             land_again += trial_object.countLandingAgainTrial(boundary=boundary)
-            total_take_offs += trial_object.countTakeOffTrial(radius=radius, boundary=boundary)
-        percentage_land_again = land_again / total_take_offs * 100
+            total_in_boundary += trial_object.countALlTrackEnteringBoundary(boundary=boundary)
+        percentage_land_again = land_again / total_in_boundary * 100
         return percentage_land_again
 
 # Gives the percentage of captures after take-off (from the total take-offs)
@@ -1869,12 +1891,12 @@ class Dataset:
             self.radius = radius
             self.boundary = boundary
             self.trialobjects = self.getTrialObjects()
-        total_take_offs = 0
+        total_in_boundary = 0
         land_to_capture = 0
         for trial_object in self.trialobjects:
             land_to_capture += trial_object.countLandingToCaptureTrial(boundary=boundary)
-            total_take_offs += trial_object.countTakeOffTrial(radius=radius, boundary=boundary)
-        percentage_land_to_capture = land_to_capture / total_take_offs * 100
+            total_in_boundary += trial_object.countALlTrackEnteringBoundary(boundary=boundary)
+        percentage_land_to_capture = land_to_capture / total_in_boundary * 100
         return percentage_land_to_capture
 
 
@@ -2170,7 +2192,6 @@ class Dataset:
 
 
     def getMatrixRestingTimesPairs(self, radius=0.02, boundary=0.02):
-
         r, z, t = self.getRestingPointsANDTImes2DPairs(radius=radius, boundary=boundary)
         resting_time_matrix, r_edges_hist, z_edges_hist = np.histogram2d(r, z, bins=(
             self.r_edges_matrix, self.z_edges_matrix), weights=t)
@@ -2546,10 +2567,14 @@ class Dataset:
 
     def plotHeatmapRestingPointsVaryingTimes(self, times, radius = 0.02, boundary = 0.02):
         lower1, upper1, lower2, upper2 = times
-        matrix1 = self.getMatrixRestingPoints(radius=radius, boundary=boundary, lower_time_boundary=lower1,
+        times1, count1 = self.getMatrixRestingTimes(radius=radius, boundary=boundary, lower_time_boundary=lower1,
                                              upper_time_boundary=upper1)
-        matrix2 = self.getMatrixRestingPoints(radius=radius, boundary=boundary, lower_time_boundary=lower2,
+        times2, count2 = self.getMatrixRestingTimes(radius=radius, boundary=boundary, lower_time_boundary=lower2,
                                              upper_time_boundary=upper2)
+        volume_matrix = self.getMatrixNormilizingVolume()
+
+        matrix1 = count1 / volume_matrix
+        matrix2 = count2 / volume_matrix
         matrices = [matrix1, matrix2]
         titles = ['Touchdown', 'Longer rests']
         fig, axs = plt.subplots(1, 2)
@@ -2578,10 +2603,21 @@ class Dataset:
 
     def plotHeatmapRestingTimesVaryingTimes(self, times, radius = 0.02, boundary = 0.02):
         lower1, upper1, lower2, upper2 = times
-        matrix1 = self.getMatrixRestingTimes(radius = radius, boundary=boundary, lower_time_boundary=lower1, upper_time_boundary=upper1)
-        matrix2 = self.getMatrixRestingTimes(radius=radius, boundary=boundary, lower_time_boundary=lower2,
+        volume_matrix = self.getMatrixNormilizingVolume()
+        times1, count1 = self.getMatrixRestingTimes(radius = radius, boundary=boundary, lower_time_boundary=lower1, upper_time_boundary=upper1)
+        times2, count2 = self.getMatrixRestingTimes(radius=radius, boundary=boundary, lower_time_boundary=lower2,
                                              upper_time_boundary=upper2)
-        matrices = [matrix1, matrix2]
+
+        count1 = np.nan_to_num(count1, nan=0.0)
+        times1_norm = times1 / volume_matrix
+        times1_norm_avg = np.divide(times1_norm, count1,
+                                             where=count1 != 0)
+        count2 = np.nan_to_num(count2, nan=0.0)
+        times2_norm = times2 / volume_matrix
+        times2_norm_avg = np.divide(times2_norm, count2,
+                                    where=count1 != 0)
+
+        matrices = [times1_norm_avg, times2_norm_avg]
         titles = ['Touchdown', 'Longer rests']
         fig, axs = plt.subplots(1, 2)
         axs = axs.flatten()
@@ -2930,8 +2966,9 @@ class Dataset:
         plt.show()
 
     def plotDisplacementViolin(self, radius = 0.02, boundary=0.02):
-        if self.trialobjects == None:
+        if self.trialobjects == None or self.boundary != boundary:
             self.trialobjects = self.getTrialObjects()
+            self.boundary = boundary
         data = []
         for trial_object in self.trialobjects:
             data += trial_object.getDisplacementsTrial(radius=radius, boundary=boundary)
@@ -2940,4 +2977,9 @@ class Dataset:
         plt.ylabel('Distance in meters (m)')
         plt.show()
 
+    def visualisationTouchdown(self, trial_num, radius = 0.02, boundary = 0.02):
+        if self.trialobjects == None:
+            self.trialobjects = self.getTrialObjects()
+        trial_object = self.trialobjects[trial_num]
+        touchdowns = trial_object.getTouchdownsTrial(radius= radius, boundary=boundary)
 

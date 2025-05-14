@@ -135,7 +135,7 @@ dataset.plotHistogramRestingTimeCondition('without')
 dataset.plotHistogramRestingTimeCondition('with_heat')
 dataset.plotHistogramRestingTimeCondition('with_heat_water')
 # Resting time violin plot with all conditions visualized
-'''
+
 dataset.plotViolinplotRestingTimeCondition()
 
 
@@ -150,6 +150,7 @@ dataset.plotHeatmapRestingTimesTouchdownVSPairs()
 
 
 dataset.plotHeatmapRestingTimesVaryingTimes([0,1, 1, 1500]) # touchdown: 0-1s, longer rests: 1-1500s
+dataset.plotHeatmapRestingPointsVaryingTimes([0,1, 1, 1500]) # touchdown: 0-1s, longer rests: 1-1500s
 
 # Resting points (all)
 dataset.plotHeatmapRestingPoints(title = 'Density Resting Points all.')
@@ -184,7 +185,8 @@ trial.plotTrackLandingToCaptureTrial(1)
 
 
 # Heatmap  Landing again
-dataset.plotHeatmapLandingAgainProbability()
+dataset.plotHeatmapLandingAgainProbability()f
+'''
 # Heatmap capture after landing
 dataset.plotHeatmapLandingToCaptureProbability()
 
