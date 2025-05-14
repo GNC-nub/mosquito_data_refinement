@@ -347,7 +347,7 @@ class Trial:
         return self.coordinate_list_trial
 
 # Creating objects for all the given tracks. N
-    def getTrackObjects(self, boundary = 0.02):
+    def getTrackObjects(self):
         object_array = []
         trial = self.getTrial()
         for track in trial:
@@ -598,9 +598,7 @@ class Trial:
             self.hopping_tracks = hopping_trial
 
     def getHoppingsTrackTrial(self, boundary = 0.02):
-        if not self.hopping_tracks or self.boundary != boundary:
-            self.boundary = boundary
-            self.initializeHoppingCoordinatesTrial(boundary=boundary)
+        self.initializeHoppingCoordinatesTrial(boundary=boundary)
         return self.hopping_tracks
 
     def getLandingTracksTrial(self, radius = 0.02, boundary = 0.02):
@@ -668,6 +666,7 @@ class Trial:
                 points.append([x_point, y_point, z_point])
             self.hopping_points = points
 
+
     def initializeWalkingPoints(self, radius = 0.02, boundary = 0.02):
         if not self.walking_points or self.boundary != boundary or self.radius != radius:
             self.initializeWalkingTrackTrial(radius= radius,boundary=boundary)
@@ -715,6 +714,26 @@ class Trial:
             self.boundary = boundary
             self.radius = radius
 
+    def getHoppingsPoints(self, boundary=0.02):
+        self.initializeHoppingPoints(boundary=boundary)
+        return self.hopping_points
+
+    def getWalkingPoints(self, radius=0.02, boundary=0.02):
+        self.initializeWalkingPoints(radius=radius, boundary=boundary)
+        return self.walking_points
+
+    def getLandingPoints(self, radius=0.02, boundary=0.02):
+        self.initializeLandingPoints(radius=radius, boundary=boundary)
+        return self.landing_points
+
+    def getTakeOffPOints(self, radius=0.02, boundary=0.02):
+        self.initializeTakeOffPoints(radius=radius, boundary=boundary)
+        return self.take_off_points
+
+    def getPairedPoints(self, radius=0.02, boundary=0.02):
+        self.initializePairedPoints(radius=radius, boundary=boundary)
+        return self.paired_points
+
     def getRestingPointsANDTimesPairs(self, radius=0.02, boundary=0.02):
         tracks = self.getPairedTracksTrial(radius=radius, boundary=boundary)
         resting_points_times = []
@@ -724,6 +743,7 @@ class Trial:
             x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
             resting_points_times.append([x_point, y_point, z_point, duration])
         return resting_points_times
+
     def getRestingPointsANDTimesTouchdown(self, radius = 0.02, boundary = 0.02):
         tracks = self.getTouchdownsTrial(radius=radius, boundary=boundary)
         resting_points_times = []
@@ -862,6 +882,19 @@ class Trial:
                                    )
             displacements.append(displacement)
         return displacements
+
+    def getDisplacementsGroup(self, track_data):
+        tracks = track_data
+        displacements = []
+        for track in tracks:
+            x, y, z, t = track
+            displacement = np.sqrt((x[0] - x[-1]) ** 2 +
+                                   (y[0] - y[-1]) ** 2 +
+                                   (z[0] - z[-1]) ** 2
+                                   )
+            displacements.append(displacement)
+        return displacements
+
 
 
 # PLotting resting times #
@@ -2843,7 +2876,7 @@ class Dataset:
         custom_cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
         for i, ax in enumerate(axs):
-            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary,upper_time_boundary, radius = radius,boundary=boundaries[i])
+            resting_time_matrix_np, resting_time_count_matrix_np = self.getMatrixRestingTimes(lower_time_boundary=lower_time_boundary,upper_time_boundary=lower_time_boundary, radius = radius,boundary=boundaries[i])
             resting_time_count_matrix = np.nan_to_num(resting_time_count_matrix_np, nan=0.0)
             resting_time_matrix_norm = resting_time_matrix_np / volume_matrix
             resting_time_matrix_average = np.divide(resting_time_matrix_norm, resting_time_count_matrix,
@@ -2942,7 +2975,7 @@ class Dataset:
         plt.show()
 
 
-    def plotRestingTimesViolinTrial(self, radius = 0.02, boundary = 0.02):
+    def plotRestingTimesViolin(self, radius = 0.02, boundary = 0.02):
         all_resting_times = self.getRestingTimes(radius=radius, boundary=boundary)
         hoppings = self.getRestingTimeHoppings(boundary=boundary)
         landings = self.getRestingTimeLandings(radius=radius, boundary=boundary)
@@ -2977,9 +3010,74 @@ class Dataset:
         plt.ylabel('Distance in meters (m)')
         plt.show()
 
-    def visualisationTouchdown(self, trial_num, radius = 0.02, boundary = 0.02):
-        if self.trialobjects == None:
+    def plotDisplacementViolinPerGroup(self, radius = 0.02, boundary=0.02):
+        if self.trialobjects == None or self.boundary != boundary:
             self.trialobjects = self.getTrialObjects()
+            self.boundary = boundary
+        total_displacements, hoppings, pairs, walkings, landings, take_offs = [], [], [], [],[], []
+
+        for trial_object in self.trialobjects:
+            total_displacements += trial_object.getDisplacementsTrial(radius=radius, boundary=boundary)
+            pairs += trial_object.getDisplacementsGroup(trial_object.getPairedTracksTrial(radius=radius, boundary=boundary))
+            hoppings += trial_object.getDisplacementsGroup(trial_object.getHoppingsTrackTrial(boundary=boundary))
+            walkings += trial_object.getDisplacementsGroup(trial_object.getWalkingTracksTrial(radius=radius,boundary=boundary))
+            landings += trial_object.getDisplacementsGroup(trial_object.getLandingTracksTrial(radius=radius,boundary=boundary))
+            take_offs += trial_object.getDisplacementsGroup(trial_object.getTakeOffTracksTrial(radius=radius, boundary=boundary))
+
+        data = [hoppings, pairs, walkings, landings, take_offs, total_displacements]
+        titles = ['Hoppings', 'Pairs', 'Walkings', 'Landings', 'Take-offs', 'Total Displacement']
+        plt.ylabel('Distance in meters (m)')
+        fig, axs = plt.subplots(nrows=1, ncols=len(data))
+        for i, ax in enumerate(axs):
+            ax.violinplot([data[i]], showmeans=True)
+            ax.set_title(titles[i])
+            ax.set_ylabel('Distance in meters (m)')
+            ax.set_xticks([])
+            count = len(data[i])
+            y_min, y_max = ax.get_ylim()
+            y_pos = y_min - 0.05 * (y_max - y_min)
+            ax.text(0.95, y_pos, f'n={count}', ha='center', va='top', fontsize=9)
+        plt.suptitle(f'Displacements of movement in different groups')
+        plt.tight_layout()
+        plt.show()
+
+
+
+        plt.show()
+
+
+
+
+    def visualisationHoppings(self, trial_num, boundary = 0.02):
+        if self.trialobjects == None or self.boundary != boundary:
+            self.trialobjects = self.getTrialObjects()
+            self.boundary = boundary
         trial_object = self.trialobjects[trial_num]
-        touchdowns = trial_object.getTouchdownsTrial(radius= radius, boundary=boundary)
+        if trial_object.track_objects == None or trial_object.boundary != boundary:
+            trial_object.track_objects = trial_object.getTrackObjects()
+        for track_object in trial_object.track_objects:
+            if track_object.getHoppingCoordinatesTrack(boundary=boundary):
+                track_object.plotTrack()
+
+    def plotBoxplotRestingPointsGroups(self, time_split, radius = 0.02, boundary = 0.02):
+        if self.trialobjects == None or self.boundary != boundary:
+            self.trialobjects = self.getTrialObjects()
+            self.boundary = boundary
+        long_rest = 0
+        touchdown = 0
+        for trial_object in self.trialobjects:
+            trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
+            for resting_time in trial:
+                if resting_time > time_split:
+                    long_rest += 1
+                else:
+                    touchdown += 1
+        data = [touchdown, long_rest]
+        plt.boxplot(data)
+        plt.xticks([1, 2], [f'Touchdown (t < {time_split}s)', f'Longer rests (t > {time_split}s)'])
+        plt.title('Boxplot Resting rate per group')
+        plt.ylabel('Number of resting points')
+        plt.show()
+
+
 

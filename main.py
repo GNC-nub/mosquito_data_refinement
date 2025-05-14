@@ -185,16 +185,10 @@ trial.plotTrackLandingToCaptureTrial(1)
 
 
 # Heatmap  Landing again
-dataset.plotHeatmapLandingAgainProbability()f
-'''
+dataset.plotHeatmapLandingAgainProbability()
+
 # Heatmap capture after landing
 dataset.plotHeatmapLandingToCaptureProbability()
-
-
-# Probability capture/land again after landing
-percentage_land_again = dataset.calculatingPercentagesLandingAgain()
-percentage_land_to_capture = dataset.calculatingPercentagesLandingToCapture()
-print(f'\nPercentage of take offs that land again is {round(percentage_land_again, 2)} %\nPercentage of take offs that lead to capture {round(percentage_land_to_capture, 2)} %')
 
 
 # association tests #
@@ -203,16 +197,25 @@ dataset.plotQuatificationHistogramTracks(radius=radius_boundary, boundary=landin
 
 dataset.plotBoxplotRadiusAssociations()  # Landing -- take-off pairing radius
 dataset.plotBoxplotCountGroupsAccosiation()  # Landing -- take-off, pairing, hoppings and walking counting
-
+dataset.plotBoxplotRestingPointsGroups()
 
 dataset.plotDisplacementViolin(radius=radius_boundary, boundary=landing_boundary)
-dataset.plotRestingTimesViolinTrial(radius=radius_boundary, boundary=landing_boundary)
+dataset.plotRestingTimesViolin(radius=radius_boundary, boundary=landing_boundary)
 
 # PLot subplots heatmaps with different area_boundary options to see if the results change --> 0.01 - 0.04 m
 dataset.plotHeatmapLandingPointsBoundaryAssociationTest()
 
 dataset.plotHeatmapRestingPointsBoundaryAssociationTest()
-dataset.plotHeatmapRestingTimesBoundaryAssociationTest()
+
+dataset.plotHeatmapRestingTimesBoundaryAssociationTest() #39
 
 dataset.plotHeatmapLandingToCaptureProbabilityAssociationTest()
 dataset.plotHeatmapLandingAgainProbabilityAssociationTest()
+'''
+# Probability capture/land again after landing
+percentage_land_again = dataset.calculatingPercentagesLandingAgain()
+percentage_land_to_capture = dataset.calculatingPercentagesLandingToCapture()
+print(f'\nPercentage of take offs that land again is {round(percentage_land_again, 2)} %\nPercentage of take offs that lead to capture {round(percentage_land_to_capture, 2)} %')
+
+dataset.plotBoxplotRestingPointsGroups(time_split = 1) # touchdown = 0-1s and longer rests are > 1s
+dataset.plotDisplacementViolinPerGroup()
