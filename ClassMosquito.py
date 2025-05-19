@@ -29,11 +29,15 @@ class Track:
         self.total_mosquitos_per_trial = 50
         self.trial_num = trial_num
         self.track_num = track_num
-        coordinate_list_track = accessing_track(trial_num, track_num)
-        self.x = coordinate_list_track[0]
-        self.y = coordinate_list_track[1]
-        self.z = coordinate_list_track[2]
-        self.time = coordinate_list_track[3]
+        if isinstance(accessing_track(trial_num, track_num), list):
+            coordinate_list_track = accessing_track(trial_num, track_num)
+            self.x = coordinate_list_track[0]
+            self.y = coordinate_list_track[1]
+            self.z = coordinate_list_track[2]
+            self.time = coordinate_list_track[3]
+            self.existing_track = True
+        else:
+            self.existing_track = False
         condition = accessing_extra_info('Condition')[trial_num]
         self.condition = condition
         self.header = f'Trial_{trial_num+1}_Track_{track_num}'
@@ -346,6 +350,7 @@ class Trial:
             self.initiateCoordinateList()
         return self.coordinate_list_trial
 
+
 # Creating objects for all the given tracks. N
     def getTrackObjects(self):
         object_array = []
@@ -497,9 +502,12 @@ class Trial:
                         used_walking_landing_points.add(i_land)
                         used_walking_take_points.add(i_takeoff)
                         used_walking_tracks.add(i_walk_land)
-                        merged_track = [sum(axes, []) for axes in zip(landing_tracks[i_land][1], walking_tracks[i_walk_land][1], take_off_tracks[i_takeoff][1])]
+                        merged_lan_track = [a + b for a, b in
+                                            zip(landing_tracks[i_land][1], walking_tracks[i_walk_land][1])]
+                        merged_take_track = [a + b for a, b in
+                                             zip(walking_tracks[i_walk_take][1], take_off_tracks[i_takeoff][1])]
+                        merged_track = [a + b for a, b in zip(merged_lan_track, merged_take_track)]
                         paired_tracks.append(merged_track)
-
                         landings_to_remove.append(i_land)
                         take_offs_to_remove.append(i_takeoff)
                         walkings_to_remove.append(i_walk_land)
@@ -585,7 +593,171 @@ class Trial:
                 new_take_off_tracks.append(item[1])
         return paired_tracks, paired_resting_times, paired_resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks
 
-# Initializes a list in self.hoppings of all the hoppings in trial N
+    def generatePairsForCSV(self, radius=0.02, boundary=0.02):
+        if self.track_objects == None or self.boundary != boundary or self.radius != radius:
+            self.track_objects = self.getTrackObjects()
+            self.boundary = boundary
+            self.radius = radius
+
+        take_off_tracks = []
+        landing_tracks = []
+        walking_tracks = []
+        paired_tracks = []
+        for track_object in self.track_objects:
+            landing_tracks.append([track_object.track_num, track_object.getLandingTrack(boundary=boundary)])
+            take_off_tracks.append([track_object.track_num, track_object.getTakeOffTrack(boundary=boundary)])
+            walking_tracks.append([track_object.track_num, track_object.getWalkingTrack(boundary=boundary)])
+
+        potential_new_landing = []
+        potential_new_take_off = []
+
+        for i_walk, walkings in enumerate(walking_tracks):
+            walking_num, walking = walkings
+            if walking:
+                x_walk, y_walk, z_walk, t_walk = walking
+                x_walk_beg, y_walk_beg, z_walk_beg, time_walk_beg = x_walk[0], y_walk[0], z_walk[0], t_walk[0]
+                x_walk_end, y_walk_end, z_walk_end, time_walk_end = x_walk[-1], y_walk[-1], z_walk[-1], t_walk[-1]
+                for i_land, landings in enumerate(landing_tracks):
+                    landing_num, landing = landings
+                    if landing:
+                        x_land, y_land, z_land, t_land = landing
+                        x_land_end, y_land_end, z_land_end, time_land_end = x_land[-1], y_land[-1], z_land[-1], t_land[
+                            -1]
+
+                        dx, dy, dz, dtime = (x_walk_beg - x_land_end), (y_walk_beg - y_land_end), (
+                                z_walk_beg - z_land_end), (time_walk_beg - time_land_end)
+                        distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
+                        resting_at_merge = dtime
+                        if distance < radius and resting_at_merge > 0:
+                            potential_new_landing.append((distance, i_land, i_walk, landing_num, walking_num))
+                for i_takeoff, take_offs in enumerate(take_off_tracks):
+                    take_off_num, take_off = take_offs
+                    if take_off:
+                        x_take, y_take, z_take, t_take = take_off
+                        x_take_beg, y_take_beg, z_take_beg, time_take_beg = x_take[0], y_take[0], z_take[0], t_take[0]
+                        dx, dy, dz, dtime = (x_take_beg - x_walk_end), (y_take_beg - y_walk_end), (
+                                z_take_beg - z_walk_end), (time_take_beg - time_walk_end)
+                        distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
+                        resting_at_merge = dtime
+                        if distance < radius and resting_at_merge > 0:
+                            potential_new_take_off.append((distance, i_takeoff, i_walk, take_off_num, walking_num))
+
+        potential_new_landing.sort()
+        potential_new_take_off.sort()
+        used_walking_take_points = set()
+        used_walking_landing_points = set()
+        used_walking_tracks = set()
+        new_walking_tracks = []
+
+        landings_to_remove = []
+        take_offs_to_remove = []
+        walkings_to_remove = []
+
+        stitch_num_land_walk_take = []
+        stitch_num_land_walk = []
+        stitch_num_walk_take = []
+        stitch_num_land_take = []
+        altered_track_nums = set()
+
+        new_take_off_tracks = []
+        new_landings_tracks = []
+
+        for distance_land, i_land, i_walk_land, landing_num, walking_num in potential_new_landing:
+            for distance_take, i_takeoff, i_walk_take, take_off_num, walking_num in potential_new_take_off:
+                if i_walk_land == i_walk_take:
+                    if i_land not in used_walking_landing_points and i_takeoff not in used_walking_take_points and i_walk_take not in used_walking_tracks:
+                        used_walking_landing_points.add(i_land)
+                        used_walking_take_points.add(i_takeoff)
+                        used_walking_tracks.add(i_walk_land)
+                        merged_lan_track = [a + b for a, b in
+                                            zip(landing_tracks[i_land][1], walking_tracks[i_walk_land][1])]
+                        merged_take_track = [a + b for a, b in
+                                             zip(walking_tracks[i_walk_take][1], take_off_tracks[i_takeoff][1])]
+                        merged_track = [a + b for a, b in zip(merged_lan_track, merged_take_track)]
+                        paired_tracks.append(merged_track)
+                        stitch_num_land_walk_take.append([landing_num, walking_num, take_off_num])
+                        altered_track_nums.add(landing_num)
+                        altered_track_nums.add(walking_num)
+                        altered_track_nums.add(take_off_num)
+                        landings_to_remove.append(i_land)
+                        take_offs_to_remove.append(i_takeoff)
+                        walkings_to_remove.append(i_walk_land)
+
+        for distance, i_land, i_walk, landing_num, walking_num in potential_new_landing:
+            if i_land not in used_walking_landing_points and i_walk not in used_walking_tracks:
+                used_walking_landing_points.add(i_land)
+                used_walking_tracks.add(i_walk)
+                stitch_num_land_walk.append([landing_num, walking_num])
+                altered_track_nums.add(landing_num)
+                altered_track_nums.add(walking_num)
+                merged_lan_track = [a + b for a, b in zip(landing_tracks[i_land][1], walking_tracks[i_walk][1])]
+                landings_to_remove.append(i_land)
+                walkings_to_remove.append(i_walk)
+                new_landings_tracks.append(merged_lan_track)
+
+        for distance, i_takeoff, i_walk, take_off_num, walking_num in potential_new_take_off:
+            if i_takeoff not in used_walking_take_points and i_walk not in used_walking_tracks:
+                used_walking_take_points.add(i_takeoff)
+                used_walking_tracks.add(i_walk)
+                stitch_num_walk_take.append([walking_num, take_off_num])
+                altered_track_nums.add(walking_num)
+                altered_track_nums.add(take_off_num)
+                merged_take_track = [a + b for a, b in zip(walking_tracks[i_walk][1], take_off_tracks[i_takeoff][1])]
+                take_offs_to_remove.append(i_takeoff)
+                walkings_to_remove.append(i_walk)
+                new_take_off_tracks.append(merged_take_track)
+
+        for i_land in sorted(landings_to_remove, reverse=True):
+            landing_tracks.pop(i_land)
+        for i_takeoff in sorted(take_offs_to_remove, reverse=True):
+            take_off_tracks.pop(i_takeoff)
+
+        potential_pairs = []
+        for i_land, landings in enumerate(landing_tracks):
+            landing_num, landing = landings
+            if landing:
+                x_land, y_land, z_land, t_land = landing
+                x_land_beg, y_land_beg, z_land_beg, time_land_beg = x_land[0], y_land[0], z_land[0], t_land[0]
+                x_land_end, y_land_end, z_land_end, time_land_end = x_land[-1], y_land[-1], z_land[-1], t_land[-1]
+                for i_takeoff, take_offs in enumerate(take_off_tracks):
+                    take_off_num, take_off = take_offs
+                    if take_off:
+                        x_take, y_take, z_take, t_take = take_off
+                        x_take_beg, y_take_beg, z_take_beg, time_take_beg = x_take[0], y_take[0], z_take[0], t_take[0]
+                        x_take_end, y_take_end, z_take_end, time_take_end = x_take[-1], y_take[-1], z_take[-1], t_take[
+                            -1]
+                        dx, dy, dz, dtime = (x_take_beg - x_land_end), (y_take_beg - y_land_end), (
+                                z_take_beg - z_land_end), (time_take_beg - time_land_end)
+                        resting_at_merge = dtime
+                        distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
+                        if distance < radius and resting_at_merge > 0:
+                            potential_pairs.append((distance, i_land, i_takeoff, landing_num, take_off_num))
+
+        potential_pairs.sort()
+        used_takeoff_points = set()
+        used_landing_points = set()
+
+        for distance, i_land, i_takeoff, landing_num, take_off_num in potential_pairs:
+            if i_takeoff not in used_takeoff_points:
+                used_takeoff_points.add(i_takeoff)
+                used_landing_points.add(i_land)
+                merge_track = [a + b for a, b in zip(landing_tracks[i_land][1], take_off_tracks[i_takeoff][1])]
+                paired_tracks.append(merge_track)
+                stitch_num_land_take.append([landing_num, take_off_num])
+                altered_track_nums.add(landing_num)
+                altered_track_nums.add(take_off_num)
+
+        for i, item in enumerate(landing_tracks):
+            if i not in used_landing_points and item[1]:
+                new_landings_tracks.append(item[1])
+        for i, item in enumerate(take_off_tracks):
+            if i not in used_takeoff_points and item[1]:
+                new_take_off_tracks.append(item[1])
+
+        return paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums
+
+
+    # Initializes a list in self.hoppings of all the hoppings in trial N
     # --> [ [ [[x], [y], [z], [t]], [[z], [y], [z], [t]] ... exe ]
     def initializeHoppingCoordinatesTrial(self, boundary=0.02):
         if not self.hopping_tracks or not self.track_objects or self.boundary != boundary:
@@ -3042,12 +3214,6 @@ class Dataset:
         plt.show()
 
 
-
-        plt.show()
-
-
-
-
     def visualisationHoppings(self, trial_num, boundary = 0.02):
         if self.trialobjects == None or self.boundary != boundary:
             self.trialobjects = self.getTrialObjects()
@@ -3068,10 +3234,10 @@ class Dataset:
         for trial_object in self.trialobjects:
             trial = trial_object.getRestingTimeTrial(radius=radius, boundary=boundary)
             for resting_time in trial:
-                if resting_time > time_split:
-                    long_rest += 1
-                else:
+                if resting_time < time_split:
                     touchdown += 1
+                else:
+                    long_rest += 1
         data = [touchdown, long_rest]
         plt.boxplot(data)
         plt.xticks([1, 2], [f'Touchdown (t < {time_split}s)', f'Longer rests (t > {time_split}s)'])

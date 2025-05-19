@@ -217,5 +217,5 @@ percentage_land_again = dataset.calculatingPercentagesLandingAgain()
 percentage_land_to_capture = dataset.calculatingPercentagesLandingToCapture()
 print(f'\nPercentage of take offs that land again is {round(percentage_land_again, 2)} %\nPercentage of take offs that lead to capture {round(percentage_land_to_capture, 2)} %')
 
-dataset.plotBoxplotRestingPointsGroups(time_split = 1) # touchdown = 0-1s and longer rests are > 1s
+dataset.plotBoxplotRestingPointsGroups(time_split = 0.5) # touchdown = 0-1s and longer rests are > 1s
 dataset.plotDisplacementViolinPerGroup()
