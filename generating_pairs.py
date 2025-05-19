@@ -14,7 +14,6 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
     basemap_boundary_tracks_path = os.path.join(path_csv_folder, 'boundary_tracks_csv')
     os.makedirs(basemap_boundary_tracks_path, exist_ok=True)
 
-
     for trial_num in range(1, 64):
         trial = ClassMosquito.Trial(trial_num)
         paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = trial.generatePairsForCSV(radius=radius, boundary=boundary)
@@ -39,22 +38,22 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                 found = False
                 i = 0
                 while not found:
-                    if track_object.track_num == stitch_num_land_take[i][0]:
+                    if i < len(stitch_num_land_take) and track_object.track_num == stitch_num_land_take[i][0]:
                         for track_object2 in trial.getTrackObjects():
                             if track_object2.track_num == stitch_num_land_take[i][1]:
                                 merged = [a + b for a, b in zip(track_object.getTrack(), track_object2.getTrack())]
                                 found = True
-                    elif track_object.track_num == stitch_num_land_walk[i][0]:
+                    elif i < len(stitch_num_land_walk) and track_object.track_num == stitch_num_land_walk[i][0]:
                         for track_object2 in trial.getTrackObjects():
                             if track_object2.track_num == stitch_num_land_walk[i][1]:
                                 merged = [a + b for a, b in zip(track_object.getTrack(), track_object2.getTrack())]
                                 found = True
-                    elif track_object.track_num == stitch_num_walk_take[i][0]:
+                    elif i < len(stitch_num_walk_take) and track_object.track_num == stitch_num_walk_take[i][0]:
                         for track_object2 in trial.getTrackObjects():
                             if track_object2.track_num == stitch_num_walk_take[i][1]:
                                 merged = [a + b for a, b in zip(track_object.getTrack(), track_object2.getTrack())]
                                 found = True
-                    elif track_object.track_num == stitch_num_land_walk_take[i][0]:
+                    elif i < len(stitch_num_land_walk_take) and track_object.track_num == stitch_num_land_walk_take[i][0]:
                         for track_object2 in trial.getTrackObjects():
                             if track_object2.track_num == stitch_num_land_walk_take[i][1]:
                                 for track_object3 in trial.getTrackObjects():
@@ -155,7 +154,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                 }
 
             df = pd.DataFrame(dictionary)
-            file_path = os.path.join(new_trial_map, f'Trial_{trial_num}_Tracks.csv')
+            file_path = os.path.join(new_boundary_trial_map, f'Trial_{trial_num}_Tracks.csv')
             df.to_csv(file_path)
 
 
