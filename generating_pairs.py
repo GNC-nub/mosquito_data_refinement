@@ -21,63 +21,92 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
         new_trial_map = os.path.join(basemap_paired_path, f'Trial_{trial_num}')
         os.makedirs(new_trial_map, exist_ok=True)
         dictionary = {}
-        for track_object in trial.getTrackObjects():
-            if track_object.track_num not in altered_track_nums:
+        track_objects1 = trial.getTrackObjects()
+        for track_object in track_objects1:
+            track_num1 = track_object.track_num
+            if track_num1 not in altered_track_nums:
+                print(f'stage0: track {track_num1} is normal')
                 x, y, z, t = track_object.getTrack()
-                dictionary[f'Trial_{trial_num}_Track_{track_object.track_num}'] = {
+                dictionary[f'Trial_{trial_num}_Track_{track_num1}'] = {
                     'x': x,
                     'y': y,
                     'z': z,
                     'time': t
                     }
                 df = pd.DataFrame(dictionary)
-                file_path = os.path.join(new_trial_map, f'Trial_{trial_num}_Track_{track_object.track_num}.csv')
+                file_path = os.path.join(new_trial_map, f'Trial_{trial_num}_Track_{track_num1}.csv')
                 df.to_csv(file_path)
-            else:
-                merged = []
-                found = False
-                i = 0
-                while not found:
-                    if i < len(stitch_num_land_take) and track_object.track_num == stitch_num_land_take[i][0]:
-                        for track_object2 in trial.getTrackObjects():
-                            if track_object2.track_num == stitch_num_land_take[i][1]:
-                                merged = [a + b for a, b in zip(track_object.getTrack(), track_object2.getTrack())]
-                                found = True
-                    elif i < len(stitch_num_land_walk) and track_object.track_num == stitch_num_land_walk[i][0]:
-                        for track_object2 in trial.getTrackObjects():
-                            if track_object2.track_num == stitch_num_land_walk[i][1]:
-                                merged = [a + b for a, b in zip(track_object.getTrack(), track_object2.getTrack())]
-                                found = True
-                    elif i < len(stitch_num_walk_take) and track_object.track_num == stitch_num_walk_take[i][0]:
-                        for track_object2 in trial.getTrackObjects():
-                            if track_object2.track_num == stitch_num_walk_take[i][1]:
-                                merged = [a + b for a, b in zip(track_object.getTrack(), track_object2.getTrack())]
-                                found = True
-                    elif i < len(stitch_num_land_walk_take) and track_object.track_num == stitch_num_land_walk_take[i][0]:
-                        for track_object2 in trial.getTrackObjects():
-                            if track_object2.track_num == stitch_num_land_walk_take[i][1]:
-                                for track_object3 in trial.getTrackObjects():
-                                    if track_object3.track_num == stitch_num_land_walk_take[i][2]:
-                                        merged_intermediate = [a + b for a, b in zip(track_object.getTrack(), track_object2.getTrack())]
-                                        merged = [a + b for a, b in zip(merged_intermediate, track_object3.getTrack())]
-                                        found = True
-                    i += 1
-                if merged:
-                    x, y, z, t = merged
-                    dictionary[f'Trial_{trial_num}_Track_{track_object.track_num}'] = {
-                        'x': x,
-                        'y': y,
-                        'z': z,
-                        'time': t
-                    }
-                    df = pd.DataFrame(dictionary)
-                    file_path = os.path.join(new_trial_map, f'Trial_{trial_num}_Track_{track_object.track_num}.csv')
-                    df.to_csv(file_path)
-                else:
-                    raise Exception("Something went wrong")
-
+        print('stage1')
+        for i in range(len(stitch_num_land_take)):
+            print('stage1.1')
+            track1 = ClassMosquito.Track(trial_num, stitch_num_land_take[i][0])
+            track2 = ClassMosquito.Track(trial_num, stitch_num_land_take[i][1])
+            merged = [a + b for a, b in zip(track1.getTrack(), track2.getTrack())]
+            x, y, z, t = merged
+            title = f'Trial_{trial_num}_land_Track_{stitch_num_land_take[i][0]}_take_Track_{stitch_num_land_take[i][1]}'
+            dictionary[title] = {
+                'x': x,
+                'y': y,
+                'z': z,
+                'time': t
+            }
+            df = pd.DataFrame(dictionary)
+            file_path = os.path.join(new_trial_map, f'{title}.csv')
+            df.to_csv(file_path)
+        for i in range(len(stitch_num_land_walk)):
+            print('stage1.2')
+            track1 = ClassMosquito.Track(trial_num, stitch_num_land_walk[i][0])
+            track2 = ClassMosquito.Track(trial_num, stitch_num_land_walk[i][1])
+            merged = [a + b for a, b in zip(track1.getTrack(), track2.getTrack())]
+            x, y, z, t = merged
+            title = f'Trial_{trial_num}_land_Track{stitch_num_land_walk[i][0]}_walk_Track_{stitch_num_land_walk[i][1]}'
+            dictionary[title] = {
+                'x': x,
+                'y': y,
+                'z': z,
+                'time': t
+            }
+            df = pd.DataFrame(dictionary)
+            file_path = os.path.join(new_trial_map, f'{title}.csv')
+            df.to_csv(file_path)
+        for i in range(len(stitch_num_walk_take)):
+            print('stage1.3')
+            track1 = ClassMosquito.Track(trial_num, stitch_num_walk_take[i][0])
+            track2 = ClassMosquito.Track(trial_num, stitch_num_walk_take[i][1])
+            merged = [a + b for a, b in zip(track1.getTrack(), track2.getTrack())]
+            x, y, z, t = merged
+            title = f'Trial_{trial_num}_walk_Track{stitch_num_walk_take[i][0]}_take_Track_{stitch_num_walk_take[i][1]}'
+            dictionary[title] = {
+                'x': x,
+                'y': y,
+                'z': z,
+                'time': t
+            }
+            df = pd.DataFrame(dictionary)
+            file_path = os.path.join(new_trial_map, f'{title}.csv')
+            df.to_csv(file_path)
+        for i in range(len(stitch_num_land_walk_take)):
+            print('stage1.4')
+            track1 = ClassMosquito.Track(trial_num, stitch_num_land_walk_take[i][0])
+            track2 = ClassMosquito.Track(trial_num, stitch_num_land_walk_take[i][1])
+            track3 = ClassMosquito.Track(trial_num, stitch_num_land_walk_take[i][2])
+            merged1 = [a + b for a, b in zip(track1.getTrack(), track2.getTrack())]
+            merged2 = [a + b for a, b in zip(merged1, track3.getTrack())]
+            x, y, z, t = merged2
+            title = f'Trial_{trial_num}_land_Track{stitch_num_land_walk_take[i][0]}_walk_Track{stitch_num_land_walk_take[i][1]}_take_Track_{stitch_num_land_walk_take[i][2]}'
+            dictionary[title] = {
+                'x': x,
+                'y': y,
+                'z': z,
+                'time': t
+            }
+            df = pd.DataFrame(dictionary)
+            file_path = os.path.join(new_trial_map, f'{title}.csv')
+            df.to_csv(file_path)
         new_boundary_trial_map = os.path.join(basemap_boundary_tracks_path, f'Trial_{trial_num}')
         os.makedirs(new_boundary_trial_map, exist_ok=True)
+        dictionary = {}
+        print('stage3')
         for track_object in trial.getTrackObjects():
             if track_object.track_num not in altered_track_nums:
                 x, y, z, t = track_object.getTrack()
@@ -86,6 +115,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                 num_hops = 0
                 for i in range(len(x)):
                     if landing_area(x[i], y[i], z[i], boundary=boundary):
+                        print('stage4')
                         if not in_run:
                             # Start time of a landing
                             in_run = True
@@ -121,6 +151,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                         }
 
             for i, track in enumerate(paired_tracks):
+                print('stage5.1')
                 x, y, z, t = track
                 dictionary[f'Trial_{trial_num}_Paired_Track_{i}'] = {
                     'x': x,
@@ -129,6 +160,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                     'time': t
                 }
             for i, track in enumerate(new_landings_tracks):
+                print('stage5.2')
                 x, y, z, t = track
                 dictionary[f'Trial_{trial_num}_Landing_Track_{i}'] = {
                     'x': x,
@@ -137,6 +169,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                     'time': t
                 }
             for i, track in enumerate(new_take_off_tracks):
+                print('stage5.3')
                 x, y, z, t = track
                 dictionary[f'Trial_{trial_num}_Takeoff_Track_{i}'] = {
                     'x': x,
@@ -145,6 +178,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                     'time': t
                 }
             for i, track in enumerate(new_walking_tracks):
+                print('stage5.4')
                 x, y, z, t = track
                 dictionary[f'Trial_{trial_num}_Walking_Track_{i}'] = {
                     'x': x,
@@ -152,7 +186,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                     'z': z,
                     'time': t
                 }
-
+            print('stage6')
             df = pd.DataFrame(dictionary)
             file_path = os.path.join(new_boundary_trial_map, f'Trial_{trial_num}_Tracks.csv')
             df.to_csv(file_path)
