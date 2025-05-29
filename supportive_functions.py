@@ -288,3 +288,63 @@ def getTrap2D(body_lower_z=-0.38, body_upper_z=-0.083, body_radius=0.15, inlet_r
     body_r = [0, body_radius, body_radius, 0]
     body_z = [body_upper_z, body_upper_z, body_lower_z, body_lower_z]
     return inlet_r, inlet_z, body_r, body_z
+
+def accessing_paired_database(trial):
+    basemap_paired_path = os.path.join(path_csv_folder1, 'paired_database_csv')
+    csv.field_size_limit(sys.maxsize)
+    trial_map = os.path.join(basemap_paired_path, f'Trial_{trial}')
+    total_trial_data = []
+    for file_name in os.listdir(trial_map):
+        track_file = os.path.join(trial_map, file_name)  # looping through every file in a trial map
+        if os.path.isfile(track_file):
+            with open(track_file, newline='') as csvfile:
+                dataset = list(csv.reader(csvfile))
+                header = dataset[0][1]
+                x_coordinates, y_coordinates, z_coordinates, time_coordinates = [], [], [], []
+
+                for i in range(1, 5):
+                    string = dataset[i][1]
+                    string = string.strip('()')
+                    string = string.split(',')
+                    for value in string:
+                        if not value == '':  # to solve an error (ValueError: could not convert string to float: '')
+                            if i == 1:
+                                time_coordinates.append(float(value))
+                            if i == 2:
+                                x_coordinates.append(float(value))
+                            if i == 3:
+                                y_coordinates.append(float(value))
+                            if i == 4:
+                                z_coordinates.append(float(value))
+                total_trial_data.append([header, x_coordinates, y_coordinates, z_coordinates, time_coordinates])
+    return total_trial_data
+
+
+def accessing_boundary_tracks(trial):
+    basemap_boundary_tracks_path = os.path.join(path_csv_folder1, 'boundary_tracks_csv')
+    csv.field_size_limit(sys.maxsize)
+    trial_map = os.path.join(basemap_boundary_tracks_path, f'Trial_{trial}')
+    total_trial_data = []
+    for file_name in os.listdir(trial_map):
+        track_file = os.path.join(trial_map, file_name)  # looping through every file in a trial map
+        if os.path.isfile(track_file):
+            with open(track_file, newline='') as csvfile:
+                dataset = list(csv.reader(csvfile))
+                header = dataset[0][1]
+                x_coordinates, y_coordinates, z_coordinates, time_coordinates = [], [], [], []
+                for i in range(1, 5):
+                    string = dataset[i][1]
+                    string = string.strip('()')
+                    string = string.split(',')
+                    for value in string:
+                        if not value == '':  # to solve an error (ValueError: could not convert string to float: '')
+                            if i == 1:
+                                time_coordinates.append(float(value))
+                            if i == 2:
+                                x_coordinates.append(float(value))
+                            if i == 3:
+                                y_coordinates.append(float(value))
+                            if i == 4:
+                                z_coordinates.append(float(value))
+                total_trial_data.append([header, x_coordinates, y_coordinates, z_coordinates, time_coordinates])
+    return total_trial_data

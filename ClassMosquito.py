@@ -319,6 +319,7 @@ class Trial:
         self.total_mosquitos_per_trial = 50
         self.trial_num = trial_num
         self.coordinate_list_trial = None
+        self.coordinates_trial_from_paired = None
         if trial_num < 59:  # to exclude tria 59
             self.condition = accessing_extra_info('Condition')[trial_num -1]
         else:
@@ -350,6 +351,10 @@ class Trial:
             self.initiateCoordinateList()
         return self.coordinate_list_trial
 
+    def getTrialfromPairedDataset(self):
+        if self.coordinates_trial_from_paired == None:
+            self.initiateCoordinateListFromPairedDataset()
+        return self.coordinates_trial_from_paired
 
 # Creating objects for all the given tracks. N
     def getTrackObjects(self):
@@ -366,6 +371,9 @@ class Trial:
     # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ], exe... ]
     def initiateCoordinateList(self):
         self.coordinate_list_trial = accessing_trial(self.trial_num)
+
+    def initiateCoordinateListFromPairedDataset(self):
+        self.coordinates_trial_from_paired = accessing_paired_database(self.trial_num)
 
 # First/last coordinates #
 

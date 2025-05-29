@@ -45,7 +45,7 @@ import os
 ## Do this before running main.py!
 
 #1. Fil in your path to the matlab file:
-path_matlab_file1 = '/Users/nubia/Desktop/Thesis_2.0/dataset/Database_time.mat' #replace this directory with your own!
+path_matlab_file1 = '/Users/nubia/Desktop/Thesis_2.0/dataset/Database.mat' #replace this directory with your own!
 
 #2. Fill in your path to where you want to store the new data structure (for example a desktop):
 path_csv_folder1 = '/Users/nubia/Desktop/Thesis_2.0/dataset' #replace this directory with your own
