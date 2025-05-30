@@ -49,7 +49,12 @@ print(f'In the whole dataset {landing_count} mosquitoes are landing. ({round(lan
 print(f'From this testing: In the whole dataset {capturing_count} mosquitoes are captured. ({round(capturing_count/total_tracks*100, 2)} % of the tracks end in capture)')
 print(f'From the capture rate of the article: In the whole dataset 1335 mosquitoes are captured. ({round(1335/total_tracks*100, 2)} % of the tracks end in capture)')
 
+'''
+#average speed
+print(f'The average speed in the whole dataset is {dataset.getAverageSpeedDataset(boundary = landing_boundary)} m/s')
+print(f'The average speed in the whole dataset is {dataset.getAverageSpeedBoundaryTracks(boundary = landing_boundary)} m/s')
 
+'''
 # --> Normal distribution of number of tracks per trial
 dataset.testNormalDistribution(dataset.getNumTracksPerTrial())
 print(f'Confidence interval of the number of tracks per trial: {dataset.testConfidenceInterval(dataset.getNumTracksPerTrial())}\n')
@@ -211,7 +216,7 @@ dataset.plotHeatmapRestingTimesBoundaryAssociationTest() #39
 
 dataset.plotHeatmapLandingToCaptureProbabilityAssociationTest()
 dataset.plotHeatmapLandingAgainProbabilityAssociationTest()
-'''
+
 # Probability capture/land again after landing
 percentage_land_again = dataset.calculatingPercentagesLandingAgain()
 percentage_land_to_capture = dataset.calculatingPercentagesLandingToCapture()
@@ -219,3 +224,5 @@ print(f'\nPercentage of take offs that land again is {round(percentage_land_agai
 
 dataset.plotBoxplotRestingPointsGroups(time_split = 0.5) # touchdown = 0-1s and longer rests are > 1s
 dataset.plotDisplacementViolinPerGroup()
+
+'''

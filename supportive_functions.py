@@ -175,7 +175,33 @@ def nearest_neighbor_to_trap_surface(x, y, z, t):
 
 
 
+def function_velocity(x, delta_t):
+    if len(x) > 4:
+        v = []
+        v1 = (-3 * x[0] + 4 * x[1] - x[2] )  / 2 * delta_t
+        vn = (3 * x[-1] - 4 * x[-2] + x[-3] ) / 2 * delta_t
+        v.append(v1)
+        for i in range(1, len(x)):
+            v_mid = ( x[i] - x[i-1] ) / delta_t
+            v.append(v_mid)
+        v.append(vn)
+    else:
+        v = []
+        for i in range(len(x)):
+            v.append((x[i] - x[i - 1]) / delta_t)
+    return v
 
+def function_speeds(track):
+    x, y, z, t = track
+    delta_t = t[1] - t[0]
+    velocity_x = function_velocity(x, delta_t)
+    velocity_y = function_velocity(y, delta_t)
+    velocity_z = function_velocity(z, delta_t)
+    speeds = []
+    for i in range(len(velocity_x)):
+        speed = np.sqrt(velocity_x[i] ** 2 + velocity_y[i] ** 2 + velocity_z[i] ** 2)
+        speeds.append(speed)
+    return speeds
 
 def accessing_track(trial, track):
     track_file = os.path.join(basemap_csv_path, f'Trial_{trial}/Trial_{trial}_Track_{track}.csv')
@@ -289,8 +315,8 @@ def getTrap2D(body_lower_z=-0.38, body_upper_z=-0.083, body_radius=0.15, inlet_r
     body_z = [body_upper_z, body_upper_z, body_lower_z, body_lower_z]
     return inlet_r, inlet_z, body_r, body_z
 
-def accessing_paired_database(trial):
-    basemap_paired_path = os.path.join(path_csv_folder1, 'paired_database_csv')
+def accessing_paired_database(trial, boundary=0.02):
+    basemap_paired_path = os.path.join(path_csv_folder1, f'paired_database_{boundary}_csv')
     csv.field_size_limit(sys.maxsize)
     trial_map = os.path.join(basemap_paired_path, f'Trial_{trial}')
     total_trial_data = []
@@ -304,7 +330,7 @@ def accessing_paired_database(trial):
 
                 for i in range(1, 5):
                     string = dataset[i][1]
-                    string = string.strip('()')
+                    string = string.strip('[]')
                     string = string.split(',')
                     for value in string:
                         if not value == '':  # to solve an error (ValueError: could not convert string to float: '')
@@ -316,12 +342,12 @@ def accessing_paired_database(trial):
                                 y_coordinates.append(float(value))
                             if i == 4:
                                 z_coordinates.append(float(value))
-                total_trial_data.append([header, x_coordinates, y_coordinates, z_coordinates, time_coordinates])
+                total_trial_data.append([x_coordinates, y_coordinates, z_coordinates, time_coordinates])
     return total_trial_data
 
 
-def accessing_boundary_tracks(trial):
-    basemap_boundary_tracks_path = os.path.join(path_csv_folder1, 'boundary_tracks_csv')
+def accessing_boundary_tracks(trial, boundary = 0.02):
+    basemap_boundary_tracks_path = os.path.join(path_csv_folder1, f'boundary_tracks_{boundary}_csv')
     csv.field_size_limit(sys.maxsize)
     trial_map = os.path.join(basemap_boundary_tracks_path, f'Trial_{trial}')
     total_trial_data = []
@@ -334,7 +360,7 @@ def accessing_boundary_tracks(trial):
                 x_coordinates, y_coordinates, z_coordinates, time_coordinates = [], [], [], []
                 for i in range(1, 5):
                     string = dataset[i][1]
-                    string = string.strip('()')
+                    string = string.strip('[]')
                     string = string.split(',')
                     for value in string:
                         if not value == '':  # to solve an error (ValueError: could not convert string to float: '')
@@ -346,5 +372,5 @@ def accessing_boundary_tracks(trial):
                                 y_coordinates.append(float(value))
                             if i == 4:
                                 z_coordinates.append(float(value))
-                total_trial_data.append([header, x_coordinates, y_coordinates, z_coordinates, time_coordinates])
+                total_trial_data.append([x_coordinates, y_coordinates, z_coordinates, time_coordinates])
     return total_trial_data
