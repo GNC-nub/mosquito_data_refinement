@@ -75,6 +75,7 @@ import os
 import csv
 import sys
 import h5py
+import math
 from loading_matlab_file import path_matlab_file1, path_csv_folder1
 basemap_csv_path  = os.path.join(path_csv_folder1,'database_csv')
 
@@ -189,6 +190,7 @@ def function_velocity(x, delta_t):
         v = []
         for i in range(len(x)):
             v.append((x[i] - x[i - 1]) / delta_t)
+    print(f'nans in velocity {any(math.isnan(s) for s in v)}')
     return v
 
 def function_speeds(track):
@@ -201,6 +203,7 @@ def function_speeds(track):
     for i in range(len(velocity_x)):
         speed = np.sqrt(velocity_x[i] ** 2 + velocity_y[i] ** 2 + velocity_z[i] ** 2)
         speeds.append(speed)
+    print(f' nans in speed {any(math.isnan(s) for s in speeds)}')
     return speeds
 
 def accessing_track(trial, track):
@@ -325,7 +328,6 @@ def accessing_paired_database(trial, boundary=0.02):
         if os.path.isfile(track_file):
             with open(track_file, newline='') as csvfile:
                 dataset = list(csv.reader(csvfile))
-                header = dataset[0][1]
                 x_coordinates, y_coordinates, z_coordinates, time_coordinates = [], [], [], []
 
                 for i in range(1, 5):

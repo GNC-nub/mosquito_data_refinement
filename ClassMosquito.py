@@ -917,12 +917,20 @@ class Trial:
         for track in all_tracks:
             if len(track[0]) > 1:
                 speeds = function_speeds(track)
-                all_speeds.append(speeds)
+                for speed in speeds:
+                    all_speeds.append(speed)
         return sum(all_speeds)/len(all_speeds)
 
     def getSpeedsTrial(self, boundary=0.02):
         self.initiateCoordinateListFromPairedDataset(boundary=boundary)
         all_tracks = self.coordinates_trial_from_paired
+        has_nan = any(
+            math.isnan(value)
+            for track in all_tracks
+            for coordinate in track
+            for value in coordinate
+        )
+        print(f'nans in tracks: {has_nan}')
         all_speeds = []
         for track in all_tracks:
             if len(track[0]) > 1:
@@ -1770,11 +1778,7 @@ class Dataset:
         for trial_object in self.trialobjects:
             speeds = trial_object.getSpeedsTrial(boundary=boundary)
             for speed in speeds:
-                if speed != math.isnan:
-                    all_speeds.append(speed)
-                else:
-                    print(f'{trial_object.trial_num} has nans')
-        print(any(math.isnan(s) for s in all_speeds))
+                all_speeds.append(speed)
         return sum(all_speeds) / len(all_speeds)
 
     def countWalkings(self, radius = 0.02, boundary=0.02):
