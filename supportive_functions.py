@@ -75,6 +75,7 @@ import os
 import csv
 import sys
 import h5py
+import ast
 import math
 from loading_matlab_file import path_matlab_file1, path_csv_folder1
 basemap_csv_path  = os.path.join(path_csv_folder1,'database_csv')
@@ -244,21 +245,35 @@ def accessing_trial(trial):
                 dataset = list(csv.reader(csvfile))
                 header = dataset[0][1]
                 x_coordinates, y_coordinates, z_coordinates, time_coordinates = [], [], [], []
-
                 for i in range(1,5):
-                    string = dataset[i][1]
-                    string = string.strip('()')
-                    string = string.split(',')
-                    for value in string:
-                        if not value == '': # to solve an error (ValueError: could not convert string to float: '')
-                            if i == 1:
-                                time_coordinates.append(float(value))
-                            if i == 2:
-                                x_coordinates.append(float(value))
-                            if i == 3:
-                                y_coordinates.append(float(value))
-                            if i == 4:
-                                z_coordinates.append(float(value))
+
+                    raw = dataset[i][1]
+                    # Clean up: remove brackets and split by commas
+                    raw = raw.strip().strip('()')
+                    values = raw.split(',')
+                    cleaned = []
+                    for val in values:
+                        val = val.strip()
+                        if val:
+                            if not val.lower() == 'nan':
+                                # print(f"NaN detected in {header} at row {i}: '{val}'")
+                                # total_bad_values += 1
+                                # Skip or replace as needed:
+                                # cleaned.append(0.0)  # Optional: replace NaN with 0
+                                # cleaned.append(None)  # Optional: for later handling
+                                #continue  # skip
+                                try:
+                                    cleaned.append(float(val))
+                                except ValueError:
+                                    print(f"Skipping bad value: {val}")
+                        if i == 1:
+                            time_coordinates = cleaned
+                        elif i == 2:
+                            x_coordinates = cleaned
+                        elif i == 3:
+                            y_coordinates = cleaned
+                        elif i == 4:
+                            z_coordinates = cleaned
                 total_trial_data.append([header, x_coordinates, y_coordinates, z_coordinates, time_coordinates])
     return total_trial_data
 
@@ -292,8 +307,6 @@ def accessing_extra_info(info_field):
     return info
 
 
-
-
 def getTrap(body_lower_z=-0.38,body_upper_z=-0.083,inlet_upper_z=0,body_radius=0.15,inlet_radius=0.055):
     theta = np.linspace(0, 2 * np.pi, 50)
 
@@ -317,35 +330,54 @@ def getTrap2D(body_lower_z=-0.38, body_upper_z=-0.083, body_radius=0.15, inlet_r
     body_r = [0, body_radius, body_radius, 0]
     body_z = [body_upper_z, body_upper_z, body_lower_z, body_lower_z]
     return inlet_r, inlet_z, body_r, body_z
-#test
+
 def accessing_paired_database(trial, boundary=0.02):
     basemap_paired_path = os.path.join(path_csv_folder1, f'paired_database_{boundary}_csv')
     csv.field_size_limit(sys.maxsize)
     trial_map = os.path.join(basemap_paired_path, f'Trial_{trial}')
     total_trial_data = []
+    total_bad_values = 0
     for file_name in os.listdir(trial_map):
         track_file = os.path.join(trial_map, file_name)  # looping through every file in a trial map
         if os.path.isfile(track_file):
             with open(track_file, newline='') as csvfile:
                 dataset = list(csv.reader(csvfile))
                 x_coordinates, y_coordinates, z_coordinates, time_coordinates = [], [], [], []
-
+                header = dataset[0][1]
                 for i in range(1, 5):
-                    string = dataset[i][1]
-                    string = string.strip('[]')
-                    string = string.split(',')
-                    for value in string:
-                        if not value == '':  # to solve an error (ValueError: could not convert string to float: '')
-                            if i == 1:
-                                time_coordinates.append(float(value))
-                            if i == 2:
-                                x_coordinates.append(float(value))
-                            if i == 3:
-                                y_coordinates.append(float(value))
-                            if i == 4:
-                                z_coordinates.append(float(value))
+                    raw = dataset[i][1]
+                    # Clean up: remove brackets and split by commas
+                    raw = raw.strip().strip('[]')
+                    values = raw.split(',')
+                    cleaned = []
+                    for val in values:
+                        val = val.strip()
+                        if val:
+                            if not (val.lower() == 'nan'):
+                                #print(f"NaN detected in {header} at row {i}: '{val}'")
+                                #total_bad_values += 1
+                                # Skip or replace as needed:
+                                # cleaned.append(0.0)  # Optional: replace NaN with 0
+                                # cleaned.append(None)  # Optional: for later handling
+                                #continue  # Or just skip it
+                                try:
+                                    cleaned.append(float(val))
+                                except ValueError:
+                                    print(f"Skipping bad value: {val}")
+                    if i == 1:
+                        time_coordinates = cleaned
+                    elif i == 2:
+                        x_coordinates = cleaned
+                    elif i == 3:
+                        y_coordinates = cleaned
+                    elif i == 4:
+                        z_coordinates = cleaned
+
                 total_trial_data.append([x_coordinates, y_coordinates, z_coordinates, time_coordinates])
+
+    #print(f'In trial {trial} the nans are: {total_bad_values}')
     return total_trial_data
+
 
 
 def accessing_boundary_tracks(trial, boundary = 0.02):

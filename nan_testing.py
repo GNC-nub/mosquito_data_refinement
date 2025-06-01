@@ -29,44 +29,24 @@ import numpy as np
 import pandas as pd
 
 from loading_matlab_file import path_matlab_file1
+from supportive_functions import *
 
 def matlab_to_dataframe(filename):
     dict = {}
     with (h5py.File(filename, 'r') as mat_file):
         trial = mat_file['Database']['Trial']['Tracks']
-
+        print('Loading trial:')
         for trial_number in range(trial.shape[0]):
-            print(trial_number)
-            ref_trial = trial[trial_number, 0] # Idk wherefore the 0 is (found it with trial and error working)
-            trial_data = mat_file[ref_trial]
+            if trial_number != 58:
+                print(trial_number)
+                ref_trial = trial[trial_number, 0] # Idk wherefore the 0 is (found it with trial and error working)
+                trial_data = mat_file[ref_trial]
 
-            x_data_group = trial_data['x']
-            y_data_group = trial_data['y']
-            z_data_group = trial_data['z']
-            time_data_group = trial_data['z']
+                x_data_group = trial_data['x']
+                y_data_group = trial_data['y']
+                z_data_group = trial_data['z']
+                time_data_group = trial_data['z']
 
-            if trial_number == 58:
-                x_vals, y_vals, z_vals, time_vals = [], [], [], []
-
-                x_vals.append(np.array(x_data_group).flatten())
-                y_vals.append(np.array(y_data_group).flatten())
-                z_vals.append(np.array(z_data_group).flatten())
-                time_vals.append(np.array(time_data_group).flatten())
-
-                x_tuple = tuple(x_vals[0])
-                y_tuple = tuple(y_vals[0])
-                z_tuple = tuple(z_vals[0])
-                time_tuple = tuple(time_vals[0])
-
-                dict[f'Trial_{trial_number + 1}_Track_{track_number + 1}'] = {
-                    'x': x_tuple,
-                    'y': y_tuple,
-                    'z': z_tuple,
-                    'time': time_tuple
-                }
-                df_show = pd.DataFrame(dict[f'Trial_{trial_number + 1}_Track_{track_number + 1}'])
-                #print(df_show.head())
-            else:
                 for track_number in range(x_data_group.shape[0]):
                     ref_x_data = x_data_group[track_number, 0] # Idk what for the 0 is
                     ref_y_data = y_data_group[track_number, 0]
@@ -98,41 +78,103 @@ def matlab_to_dataframe(filename):
                     }
 
         df = pd.DataFrame(dict)
-        print(df.head())
     return df
 
-nan_count = 0
-datapoint_count = 0
-total_points = 0
-nantrack_count = 0
-total_tracks = 0
 
-df_dataset = matlab_to_dataframe(path_matlab_file1)
+def nan_testing():
+    nan_count = 0
+    datapoint_count = 0
+    total_points = 0
+    nantrack_count = 0
+    total_tracks = 0
 
-#illiteriate through every track, through every coordinate (x,y,z):
-for row in range(df_dataset.shape[0]):
-    for column in range(df_dataset.shape[1]):
-        track = df_dataset.iloc[row, column]
-        total_tracks += 1
-        for point in track:
-            total_points += 1
-            x = True
-            if pd.isna(point):
-                nan_count += 1
-            else:
-                datapoint_count += 1
-                x = False
-        if x == True:
-            nantrack_count += 1
+    df_dataset = matlab_to_dataframe(path_matlab_file1)
+
+    #illiteriate through every track, through every coordinate (x,y,z):
+    for row in range(df_dataset.shape[0]):
+        for column in range(df_dataset.shape[1]):
+            track = df_dataset.iloc[row, column]
+            total_tracks += 1
+            for point in track:
+                total_points += 1
+                x = True
+                if pd.isna(point):
+                    nan_count += 1
+                else:
+                    datapoint_count += 1
+                    x = False
+            if x == True:
+                nantrack_count += 1
 
 
-#Every x,y,z, time tuples is still seperate tacks, so to acccount for this i devide by 3.
-nantrack_count /= 4
-total_tracks /= 4
-nan_count /= 4
-datapoint_count /= 4
+    #Every x,y,z, time tuples is still seperate tacks, so to acccount for this i devide by 3.
+    nantrack_count /= 4
+    total_tracks /= 4
+    nan_count /= 4
+    datapoint_count /= 4
 
-print(f'The nan count is {nan_count}.\nThe datapoints count containing actual data is {datapoint_count}. \nThe total is {total_points}.')
-print(f'The percentage of nan on the whole dataset is {(nan_count/total_points)*100} %.')
-print(f"The number of tracks containing only nan's is {nantrack_count}.\nThe total number of tracks is {total_tracks}.")
-print(f"The percentage of tracks containing only nan's is {(nantrack_count/total_tracks)*100} %")
+    print(f'The nan count is {nan_count}.\nThe datapoints count containing actual data is {datapoint_count}. \nThe total is {total_points}.')
+    print(f'The percentage of nan on the whole dataset is {(nan_count/total_points)*100} %.')
+    print(f"The number of tracks containing only nan's is {nantrack_count}.\nThe total number of tracks is {total_tracks}.")
+    print(f"The percentage of tracks containing only nan's is {(nantrack_count/total_tracks)*100} %")
+
+
+def nan_testing_nonpaired_dataset():
+    has_nans = 0
+    has_values = 0
+    for trial in range(1, 65):
+        trial_data = accessing_trial(trial)
+        for track_num, track in enumerate(trial_data):
+            header, x, y, z, t = track
+            for i in range(len(x)):
+                has_nan = any([
+                    math.isnan(x[i]),
+                    math.isnan(y[i]),
+                    math.isnan(z[i]),
+                    math.isnan(t[i])
+                ])
+                has_value = any([
+                    math.isfinite(x[i]),
+                    math.isfinite(y[i]),
+                    math.isfinite(z[i]),
+                    math.isfinite(t[i])
+                ])
+                if has_nan:
+                    has_nans += 1
+                if has_value:
+                    has_values += 1
+    print(f'Non - paired has nans: {has_nans}')
+    print(f'Non - paired has values: {has_values}')
+
+
+
+def nan_testing_paired_dataset():
+    has_nans = 0
+    has_values = 0
+    for trial in range(1, 65):
+        trial_data = accessing_paired_database(trial, boundary=0.03)
+        for track_num, track in enumerate(trial_data):
+            x, y, z, t = track
+            for i in range(len(x)):
+                has_nan = any([
+                    math.isnan(x[i]),
+                    math.isnan(y[i]),
+                    math.isnan(z[i]),
+                    math.isnan(t[i])
+                ])
+                has_value = any([
+                    math.isfinite(x[i]),
+                    math.isfinite(y[i]),
+                    math.isfinite(z[i]),
+                    math.isfinite(t[i])
+                ])
+                if has_nan:
+                    has_nans += 1
+                if has_value:
+                    has_values += 1
+    print(f'Paired has nans: {has_nans}')
+    print(f'Paired has values: {has_values}')
+nan_testing_nonpaired_dataset()
+nan_testing_paired_dataset()
+
+

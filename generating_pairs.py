@@ -109,7 +109,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
             df.to_csv(file_path)
         new_boundary_trial_map = os.path.join(basemap_boundary_tracks_path, f'Trial_{trial_num}')
         os.makedirs(new_boundary_trial_map, exist_ok=True)
-        print(f'Trial {trial_num},stage3')
+        print(f'Trial {trial_num}, stage3')
         for track_object in trial.getTrackObjects():
             if track_object.track_num not in altered_track_nums:
                 x, y, z, t = track_object.getTrack()
@@ -117,7 +117,10 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                 x_hop, y_hop, z_hop, t_hop = [], [], [], []
                 num_hops = 0
                 for i in range(len(x)):
-                    if landing_area(x[i], y[i], z[i], boundary=boundary):
+                    take_off_start = False # when starting in take_off the hop does not get added
+                    if landing_area(x[0], y[0], z[0], boundary=boundary):
+                        take_off_start = True
+                    if landing_area(x[i], y[i], z[i], boundary=boundary) and not take_off_start:
                         print(f'Trial {trial_num}, stage4')
                         if not in_run:
                             # Start time of a landing
@@ -148,79 +151,117 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                             file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
                             df.to_csv(file_path)
                             x_hop, y_hop, z_hop, t_hop = [], [], [], []
+                    # When a track ends in landing, the landing does not get added!
+        for i in range(len(stitch_num_land_take)):
+            print(f'Trial {trial_num}, stage5')
+            track1 = ClassMosquito.Track(trial_num, stitch_num_land_take[i][0])  # landing
+            track2 = ClassMosquito.Track(trial_num, stitch_num_land_take[i][1]) # take-off
+            x1, y1, z1, t1 = track1.getTrack()
+            x2, y2, z2, t2 = track2.getTrack()
+            in_run = False
+            x_hop, y_hop, z_hop, t_hop = [], [], [], []
+            for i1 in range(len(x1)):
+                if landing_area(x1[i1], y1[i1], z1[i1], boundary=boundary):
+                    if not in_run:
+                        # Start time of a landing
+                        in_run = True
+                        x_hop = [x1[i1]]
+                        y_hop = [y1[i1]]
+                        z_hop = [z1[i1]]
+                        t_hop = [t1[i1]]
+                    else:
+                        x_hop.append(x1[i1])
+                        y_hop.append(y1[i1])
+                        z_hop.append(z1[i1])
+                        t_hop.append(t1[i1])
+                else:
                     if in_run:
-                        # When a track ends in landing, the landing still gets added
-                        num_hops += 1
-                        title = f'Trial_{trial_num}_Track_{track_object.track_num}_Hop_{num_hops}'
-                        dictionary = {}
-                        dictionary[title] = {
-                            'x': x_hop,
-                            'y': y_hop,
-                            'z': z_hop,
-                            'time': t_hop
-                        }
-                        df = pd.DataFrame(dictionary)
-                        file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
-                        df.to_csv(file_path)
+                        # End time of a landing
+                        in_run = False
+                        x_hop, y_hop, z_hop, t_hop = [], [], [], []
+                if in_run:
+                    # When a track ends in landing, the landing gets added
+                    take_off_added = False
+                    for i2 in range(len(x2)): # add the take_off
+                        if landing_area(x2[i2], y2[i2], z2[i2], boundary=boundary) and not take_off_added:
+                            x_hop.append(x2[i2])
+                            y_hop.append(y2[i2])
+                            z_hop.append(z2[i2])
+                            t_hop.append(t2[i2])
+                        else:
+                            take_off_added = True
+                            dictionary = {}
+                            title = f'Trial_{trial_num}_Paired_Walking_Track_{i}'
+                            dictionary[title] = {
+                                'x': x_hop,
+                                'y': y_hop,
+                                'z': z_hop,
+                                'time': t_hop
+                            }
+                            df = pd.DataFrame(dictionary)
+                            file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
+                            df.to_csv(file_path)
+                            x_hop, y_hop, z_hop, t_hop = [], [], [], []
+        for i in range(len(stitch_num_land_walk_take)):
+            print(f'Trial {trial_num}, stage6')
 
-            for i, track in enumerate(paired_tracks):
-                print(f'Trial {trial_num}, stage5.1')
-                x, y, z, t = track
-                title = f'Trial_{trial_num}_Paired_Track_{i}'
-                dictionary = {}
-                dictionary[title] = {
-                    'x': x,
-                    'y': y,
-                    'z': z,
-                    'time': t
-                }
-                df = pd.DataFrame(dictionary)
-                file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
-                df.to_csv(file_path)
-            for i, track in enumerate(new_landings_tracks):
-                print(f'Trial {trial_num}, stage5.2')
-                x, y, z, t = track
-                title = f'Trial_{trial_num}_Landing_Track_{i}'
-                dictionary = {}
-                dictionary[title] = {
-                    'x': x,
-                    'y': y,
-                    'z': z,
-                    'time': t
-                }
-                df = pd.DataFrame(dictionary)
-                file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
-                df.to_csv(file_path)
-            for i, track in enumerate(new_take_off_tracks):
-                print(f'Trial {trial_num}, stage5.3')
-                x, y, z, t = track
-                title = f'Trial_{trial_num}_Takeoff_Track_{i}'
-                dictionary = {}
-                dictionary[title] = {
-                    'x': x,
-                    'y': y,
-                    'z': z,
-                    'time': t
-                }
-                df = pd.DataFrame(dictionary)
-                file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
-                df.to_csv(file_path)
-            for i, track in enumerate(new_walking_tracks):
-                print(f'Trial {trial_num}, stage5.4')
-                x, y, z, t = track
-                title = f'Trial_{trial_num}_Walking_Track_{i}'
-                dictionary = {}
-                dictionary[title] = {
-                    'x': x,
-                    'y': y,
-                    'z': z,
-                    'time': t
-                }
-                df = pd.DataFrame(dictionary)
-                file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
-                df.to_csv(file_path)
-        print(f'Trial {trial_num}, stage6')
+            track1 = ClassMosquito.Track(trial_num, stitch_num_land_walk_take[i][0])
+            track2 = ClassMosquito.Track(trial_num, stitch_num_land_walk_take[i][1])
+            track3 = ClassMosquito.Track(trial_num, stitch_num_land_walk_take[i][2])
+
+            x1, y1, z1, t1 = track1.getTrack()
+            x2, y2, z2, t2 = track2.getTrack()
+            x3, y3, z3, t3 = track3.getTrack()
+            in_run = False
+            x_hop, y_hop, z_hop, t_hop = [], [], [], []
+            for i1 in range(len(x1)):
+                if landing_area(x1[i1], y1[i1], z1[i1], boundary=boundary):
+                    if not in_run:
+                        # Start time of a landing
+                        in_run = True
+                        x_hop = [x1[i1]]
+                        y_hop = [y1[i1]]
+                        z_hop = [z1[i1]]
+                        t_hop = [t1[i1]]
+                    else:
+                        x_hop.append(x1[i1])
+                        y_hop.append(y1[i1])
+                        z_hop.append(z1[i1])
+                        t_hop.append(t1[i1])
+                else:
+                    if in_run:
+                        # End time of a landing
+                        in_run = False
+                        x_hop, y_hop, z_hop, t_hop = [], [], [], []
+                if in_run:
+                    # When a track ends in landing, the landing gets added
+                    for i2 in range(len(x2)): # add the walking track
+                        x_hop.append(x2[i2])
+                        y_hop.append(y2[i2])
+                        z_hop.append(z2[i2])
+                        t_hop.append(t2[i2])
+                    take_off_added = False
+                    for i3 in range(len(x3)): # add the take_off
+                        if landing_area(x3[i3], y3[i3], z3[i3], boundary=boundary) and not take_off_added:
+                            x_hop.append(x3[i3])
+                            y_hop.append(y3[i3])
+                            z_hop.append(z3[i3])
+                            t_hop.append(t3[i3])
+                        else:
+                            take_off_added = True
+                            dictionary = {}
+                            title = f'Trial_{trial_num}_Paired_Track_{i}'
+                            dictionary[title] = {
+                                'x': x_hop,
+                                'y': y_hop,
+                                'z': z_hop,
+                                'time': t_hop
+                            }
+                            df = pd.DataFrame(dictionary)
+                            file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
+                            df.to_csv(file_path)
+                            x_hop, y_hop, z_hop, t_hop = [], [], [], []
 
 if __name__ =='__main__':
-    makePairedCSVDataset(path_csv_folder=path_csv_folder1, boundary= 0.03)
+    makePairedCSVDataset(path_csv_folder=path_csv_folder1, boundary= 0.02)
 

@@ -49,7 +49,11 @@ print(f'In the whole dataset {landing_count} mosquitoes are landing. ({round(lan
 print(f'From this testing: In the whole dataset {capturing_count} mosquitoes are captured. ({round(capturing_count/total_tracks*100, 2)} % of the tracks end in capture)')
 print(f'From the capture rate of the article: In the whole dataset 1335 mosquitoes are captured. ({round(1335/total_tracks*100, 2)} % of the tracks end in capture)')
 
+
+
 '''
+
+
 #average speed
 print(f'The average speed in the whole dataset is {dataset.getAverageSpeedDataset(boundary = landing_boundary)} m/s')
 print(f'The average speed in the whole dataset is {dataset.getAverageSpeedBoundaryTracks(boundary = landing_boundary)} m/s')

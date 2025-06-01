@@ -37,6 +37,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import os
+import math
 
 
 
@@ -55,8 +56,6 @@ path_csv_folder1 = '/Users/nubia/Desktop/Thesis_2.0/dataset' #replace this direc
 #4. When complete check if there are indeed 64 trials in your directory.
 
 
-
-
 #This function is used to filter out all the nan from the beginning and the end of each track.
 #All the nan's in the middle of actual data are kept within the csv data.
 def filtering_nan(lst):
@@ -64,16 +63,16 @@ def filtering_nan(lst):
     end_index = None
 
     for i in range(len(lst)):
-        if not np.isnan(lst[i]):
+        if not math.isnan(lst[i]):
             end_index = i
     for i in range(len(lst) - 1, -1, -1):
-        if not np.isnan(lst[i]):
+        if not math.isnan(lst[i]):
             start_index = i
 
     if start_index == None or end_index == None:
         lst_filterd = []
     else:
-        lst_filterd  = lst[start_index:end_index + 1]
+        lst_filterd = lst[start_index:end_index + 1]
     return lst_filterd
 
 def matlab_to_csv_map(path_matlab_file, path_csv_folder):
@@ -142,7 +141,6 @@ def matlab_to_csv_map(path_matlab_file, path_csv_folder):
                             'y': y_tuple,
                             'z': z_tuple,
                             'time': time_tuple
-
                         }
                         df = pd.DataFrame(dictionary)
                         file_path = os.path.join(new_map, f'Trial_{trial_number + a}_Track_{track_number + 1}.csv')

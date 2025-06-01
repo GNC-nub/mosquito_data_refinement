@@ -744,15 +744,12 @@ class Trial:
             landing_num, landing = landings
             if landing:
                 x_land, y_land, z_land, t_land = landing
-                x_land_beg, y_land_beg, z_land_beg, time_land_beg = x_land[0], y_land[0], z_land[0], t_land[0]
                 x_land_end, y_land_end, z_land_end, time_land_end = x_land[-1], y_land[-1], z_land[-1], t_land[-1]
                 for i_takeoff, take_offs in enumerate(take_off_tracks):
                     take_off_num, take_off = take_offs
                     if take_off:
                         x_take, y_take, z_take, t_take = take_off
                         x_take_beg, y_take_beg, z_take_beg, time_take_beg = x_take[0], y_take[0], z_take[0], t_take[0]
-                        x_take_end, y_take_end, z_take_end, time_take_end = x_take[-1], y_take[-1], z_take[-1], t_take[
-                            -1]
                         dx, dy, dz, dtime = (x_take_beg - x_land_end), (y_take_beg - y_land_end), (
                                 z_take_beg - z_land_end), (time_take_beg - time_land_end)
                         resting_at_merge = dtime
@@ -780,7 +777,6 @@ class Trial:
         for i, item in enumerate(take_off_tracks):
             if i not in used_takeoff_points and item[1]:
                 new_take_off_tracks.append(item[1])
-
         return paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums
 
 
@@ -813,11 +809,13 @@ class Trial:
                                                                                                             boundary=boundary)
         return new_take_off_tracks
 
-#VERWIJDEREN
+#Updated Nieuw
     def getPairedTracksTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius,
+        paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = self.generatePairsForCSV(radius,
                                                                                                             boundary=boundary)
-        return pairs
+        return paired_tracks
+
+
 
 #VERWIJDEREN
     def getWalkingTracksTrial(self, radius = 0.02, boundary = 0.02):
@@ -1164,8 +1162,16 @@ class Trial:
 # Get the total number of associated (landing -- take-off) pairs of a trial
     # --> amount
     def countPairsTrial(self, radius = 0.02, boundary = 0.02):
-        return len(self.getPairedTracksTrial(radius=radius, boundary=boundary))
+        paired_tracks, paired_resting_times, paired_resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(
+            radius,
+            boundary=boundary)
+        return len(paired_tracks)
 
+    def countPairsTrial_paired_dataset(self, radius = 0.02, boundary = 0.02):
+        paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = self.generatePairsForCSV(
+            radius,
+            boundary=boundary)
+        return len(paired_tracks)
 
     def countALlTrackEnteringBoundary(self, boundary= 0.02):
         if not self.take_off_points or self.boundary != boundary:
@@ -1815,8 +1821,22 @@ class Dataset:
             self.trialobjects = self.getTrialObjects()
         count = 0
         for trial_object in self.trialobjects:
+            print(f'OG dataset: trial {trial_object.trial_num}')
             count += trial_object.countPairsTrial(radius=radius, boundary=boundary)
         return count
+
+    def countPairs_paired_dataset(self, radius = 0.02, boundary=0.02):
+        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
+            self.radius = radius
+            self.boundary = boundary
+            self.trialobjects = self.getTrialObjects()
+        count = 0
+        for trial_object in self.trialobjects:
+            print(f'Paired dataset: trial {trial_object.trial_num}')
+            count += trial_object.countPairsTrial_paired_dataset(radius=radius, boundary=boundary)
+        return count
+
+
     def countHoppings(self, boundary=0.02):
         if self.trialobjects == None  or self.boundary != boundary:
             self.boundary = boundary
@@ -1830,7 +1850,7 @@ class Dataset:
 
 
 
-    def plotQuatificationHistogramTracks(self, radius = 0.02, boundary=0.02):
+    def plotQuantificationHistogramTracks(self, radius = 0.02, boundary=0.02):
         walkings = self.countWalkings(radius=radius, boundary=boundary)
         landings = self.countLandings(radius=radius, boundary=boundary)
         take_offs = self.countTakeOffs(radius=radius, boundary=boundary)
