@@ -152,7 +152,7 @@ def nan_testing_paired_dataset():
     has_nans = 0
     has_values = 0
     for trial in range(1, 65):
-        trial_data = accessing_paired_database(trial, boundary=0.03)
+        trial_data = accessing_paired_database(trial, boundary=0.02)
         for track_num, track in enumerate(trial_data):
             x, y, z, t = track
             for i in range(len(x)):

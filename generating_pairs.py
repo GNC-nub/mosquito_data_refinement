@@ -37,10 +37,13 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                 file_path = os.path.join(new_trial_map, f'Trial_{trial_num}_Track_{track_num1}.csv')
                 df.to_csv(file_path)
         print('stage1')
+        used_track_num = set()
         for i in range(len(stitch_num_land_take)):
             print(f'Trial {trial_num}, stage1.1')
             track1 = ClassMosquito.Track(trial_num, stitch_num_land_take[i][0])
             track2 = ClassMosquito.Track(trial_num, stitch_num_land_take[i][1])
+            used_track_num.add(track1)
+            used_track_num.add(track2)
             merged = [a + b for a, b in zip(track1.getTrack(), track2.getTrack())]
             x, y, z, t = merged
             dictionary = {}
@@ -58,6 +61,12 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
             print(f'Trial {trial_num}, stage1.2')
             track1 = ClassMosquito.Track(trial_num, stitch_num_land_walk[i][0])
             track2 = ClassMosquito.Track(trial_num, stitch_num_land_walk[i][1])
+            if track1 in used_track_num:
+                print(f'Allert! track {track1} used already')
+            if track2 in used_track_num:
+                print(f'Allert! track {track2} used already')
+            used_track_num.add(track1)
+            used_track_num.add(track2)
             merged = [a + b for a, b in zip(track1.getTrack(), track2.getTrack())]
             x, y, z, t = merged
             dictionary = {}
@@ -75,6 +84,12 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
             print(f'Trial {trial_num}, stage1.3')
             track1 = ClassMosquito.Track(trial_num, stitch_num_walk_take[i][0])
             track2 = ClassMosquito.Track(trial_num, stitch_num_walk_take[i][1])
+            if track1 in used_track_num:
+                print(f'Allert! track {track1} used already')
+            if track2 in used_track_num:
+                print(f'Allert! track {track2} used already')
+            used_track_num.add(track1)
+            used_track_num.add(track2)
             merged = [a + b for a, b in zip(track1.getTrack(), track2.getTrack())]
             x, y, z, t = merged
             dictionary = {}
@@ -266,5 +281,5 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                                 x_hop, y_hop, z_hop, t_hop = [], [], [], []
 
 if __name__ =='__main__':
-    makePairedCSVDataset(path_csv_folder=path_csv_folder1, boundary= 0.01)
+    makePairedCSVDataset(path_csv_folder=path_csv_folder1, boundary= 0.03)
 
