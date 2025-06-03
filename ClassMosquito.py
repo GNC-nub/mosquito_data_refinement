@@ -327,22 +327,15 @@ class Trial:
             self.condition = accessing_extra_info('Condition')[trial_num]
         self.header = f'Trial_{trial_num + 1}'
 
-        self.hopping_points = None
-        self.landing_points = None
-        self.take_off_points = None
-        self.walking_points = None
+        self.touchdown_points = None
         self.paired_points = None
-
-        self.resting_points = None
+        self.long_resting_points = None
+        self.all_resting_points = None
 
         self.num_tracks = None
         self.track_objects = None
 
         self.boundary_tracks = None
-        self.hopping_tracks = None
-        self.landing_tracks = None
-        self.take_off_tracks = None
-        self.walking_tracks = None
         self.boundary = 0.02
         self.radius = 0.02
         self.duration_boundary = 0.3
@@ -456,9 +449,7 @@ class Trial:
         return self.getEndTimeTrial() - self.getStartTimeTrial()
 
 
-
 #  Generates the most likely resting pairs in a dictionary, with lists of the resting time
-
     def generatePairsForCSV(self, radius=0.02, boundary=0.02):
         if self.track_objects == None or self.boundary != boundary or self.radius != radius:
             self.track_objects = self.getTrackObjects()
@@ -621,63 +612,12 @@ class Trial:
                 new_take_off_tracks.append(item[1])
         return paired_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums
 
-
-#VERWIJDEREN
-    # Initializes a list in self.hoppings of all the hoppings in trial N
-    # --> [ [ [[x], [y], [z], [t]], [[z], [y], [z], [t]] ... exe ]
-    def initializeHoppingCoordinatesTrial(self, boundary=0.02):
-        if not self.hopping_tracks or not self.track_objects or self.boundary != boundary:
-            self.boundary = boundary
-            self.track_objects = self.getTrackObjects()
-            hopping_trial = []
-            for track_object in self.track_objects:
-                if track_object.getHoppingCoordinatesTrack(boundary=boundary):
-                    hopping_trial += track_object.getHoppingCoordinatesTrack(boundary=boundary)
-            self.hopping_tracks = hopping_trial
-
-#VERWIJDEREN
-    def getHoppingsTrackTrial(self, boundary = 0.02):
-        self.initializeHoppingCoordinatesTrial(boundary=boundary)
-        return self.hopping_tracks
-#VERWIJDEREN
-    def getLandingTracksTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius = radius,
-                                                                                                            boundary=boundary)
-        return new_landings_tracks
-
-#VERWIJDEREN
-    def getTakeOffTracksTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius = radius,
-                                                                                                            boundary=boundary)
-        return new_take_off_tracks
-
-#Updated Nieuw
     def getPairedTracksTrial(self, radius = 0.02, boundary = 0.02):
-        paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = self.generatePairsForCSV(radius,
+        paired_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = self.generatePairsForCSV(radius,
                                                                                                             boundary=boundary)
         return paired_tracks
 
-
-
-#VERWIJDEREN
-    def getWalkingTracksTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(
-            radius,
-            boundary=boundary)
-        return new_walking_tracks
-
-
-# VERWIJDEREN
-    def getAllTracksInBoundaryTrial(self, radius = 0.02, boundary = 0.02):
-        walkings = self.getWalkingTracksTrial(radius=radius, boundary=boundary)
-        paired_tracks = self.getPairedTracksTrial(radius=radius, boundary=boundary)
-        landings = self.getLandingTracksTrial(radius=radius, boundary=boundary)
-        take_offs = self.getTakeOffTracksTrial(radius=radius, boundary=boundary)
-        hoppings = self.getHoppingsTrackTrial(boundary=boundary)
-        return walkings + paired_tracks + landings + take_offs + hoppings
-
-
-#NIEUW!
+# Via getTrialfromPairedDataset alle boundary data
     def initiateBoundaryData(self, boundary = 0.02, duration_boundary = 0.3):
         if self.boundary != boundary or self.duration_boundary != duration_boundary or self.complete_hops == None or self.incomplete_hops_count == None:
             all_tracks = self.getTrialfromPairedDataset(boundary=boundary)
@@ -792,103 +732,50 @@ class Trial:
                 for speed in speeds:
                     all_speeds.append(speed)
         return all_speeds
-
-    def initializeLandingTracksTrial(self, radius = 0.02, boundary = 0.02):
-        if self.landing_tracks == None or self.boundary != boundary or self.radius != radius:
-            self.radius = radius
-            self.boundary = boundary
-            self.landing_tracks = self.getLandingTracksTrial(radius=radius, boundary=boundary)
-
-    def initializeTakeOffTracksTrial(self, radius = 0.02, boundary = 0.02):
-        if self.take_off_tracks == None or self.boundary != boundary or self.radius != radius:
-            self.boundary = boundary
-            self.radius = radius
-            self.take_off_tracks = self.getTakeOffTracksTrial(radius=radius, boundary=boundary)
-
-
-    def initializeWalkingTrackTrial(self, radius = 0.02, boundary = 0.02):
-        if self.walking_tracks == None or self.boundary != boundary or self.radius != radius:
-            self.boundary = boundary
-            self.radius = radius
-            self.walking_tracks = self.getWalkingTracksTrial(radius= radius, boundary=boundary)
-
-    def initializeHoppingPoints(self, boundary = 0.02):
-        if not self.hopping_points or self.boundary != boundary:
-            self.initializeHoppingCoordinatesTrial(boundary = boundary)
-            self.boundary = boundary
+    def initializeRestingPointsTouchdown(self, boundary = 0.02, duration_boundary = 0.03):
             points = []
-            for hop in self.hopping_tracks:
+            for hop in self.getTouchdownsTrial(boundary=boundary, duration_boundary=duration_boundary):
                 x, y, z, t = hop
                 x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
                 points.append([x_point, y_point, z_point])
-            self.hopping_points = points
+            self.touchdown_points = points
 
-
-    def initializeWalkingPoints(self, radius = 0.02, boundary = 0.02):
-        if not self.walking_points or self.boundary != boundary or self.radius != radius:
-            self.initializeWalkingTrackTrial(radius= radius,boundary=boundary)
-            self.boundary = boundary
-            self.radius = radius
+    def initializeLongRestingPoints(self, radius = 0.02, boundary = 0.02, duration_boundary = 0.03):
+        if not self.long_resting_points or self.boundary != boundary or self.radius != radius:
             points = []
-            for hop in self.walking_tracks:
+            for hop in self.getRestingHops(boundary=boundary, duration_boundary=duration_boundary):
                 x, y, z, t = hop
                 x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
                 points.append([x_point, y_point, z_point])
-            self.walking_points = points
-
-    def initializeLandingPoints(self, radius = 0.02, boundary = 0.02):
-        if not self.landing_points or self.boundary != boundary or self.radius != radius:
-            self.initializeLandingTracksTrial(radius= radius, boundary=boundary)
+            self.long_resting_points = points
             self.boundary = boundary
             self.radius = radius
-            points = []
-            for track in self.landing_tracks:
-                x, y, z, t = track
-                x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
-                points.append([x_point, y_point, z_point])
-            self.landing_points = points
 
-    def initializeTakeOffPoints(self, radius= 0.02, boundary = 0.02):
-        if not self.take_off_points or self.boundary != boundary or self.radius != radius:
-            self.initializeTakeOffTracksTrial(radius= radius,boundary=boundary)
-            self.boundary = boundary
-            self.radius = radius
-            points = []
-            for track in self.take_off_tracks:
-                x, y, z, t = track
-                x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
-                points.append([x_point, y_point, z_point])
-            self.take_off_points = points
-
-    def initializePairedPoints(self, radius = 0.02, boundary= 0.02):
+    def initializePairedRestingPoints(self, radius = 0.02, boundary= 0.02, duration_boundary = 0.03):
         if not self.paired_points or self.boundary != boundary or self.radius != radius:
-            self.paired_points = self.getRestingPointsPairsTrial(radius= radius,boundary=boundary)
+            points = []
+            for hop in self.getRestingHops(boundary=boundary, duration_boundary=duration_boundary):
+                x, y, z, t = hop
+                x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
+                points.append([x_point, y_point, z_point])
+            self.paired_points = points
             self.boundary = boundary
             self.radius = radius
-    def initializeRestingPointsTrial(self, radius= 0.02, boundary = 0.02):
-        if not self.resting_points or self.boundary != boundary or self.radius != radius:
-            self.resting_points = self.getRestingPointsTrial(radius=radius, boundary=boundary)
+
+    def initializeRestingPoints(self, radius = 0.02, boundary= 0.02, duration_boundary = 0.03):
+        if not self.all_resting_points or self.boundary != boundary or self.radius != radius:
+            points = []
+            for hop in self.getCompleteHops(boundary=boundary, duration_boundary=duration_boundary):
+                x, y, z, t = hop
+                x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
+                points.append([x_point, y_point, z_point])
+            self.all_resting_points = points
             self.boundary = boundary
             self.radius = radius
 
-    def getHoppingsPoints(self, boundary=0.02):
-        self.initializeHoppingPoints(boundary=boundary)
-        return self.hopping_points
 
-    def getWalkingPoints(self, radius=0.02, boundary=0.02):
-        self.initializeWalkingPoints(radius=radius, boundary=boundary)
-        return self.walking_points
-
-    def getLandingPoints(self, radius=0.02, boundary=0.02):
-        self.initializeLandingPoints(radius=radius, boundary=boundary)
-        return self.landing_points
-
-    def getTakeOffPOints(self, radius=0.02, boundary=0.02):
-        self.initializeTakeOffPoints(radius=radius, boundary=boundary)
-        return self.take_off_points
-
-    def getPairedPoints(self, radius=0.02, boundary=0.02):
-        self.initializePairedPoints(radius=radius, boundary=boundary)
+    def getPairedPoints(self, radius=0.02, boundary=0.02, duration_boundary = 0.03):
+        self.initializePairedRestingPoints(radius=radius, boundary=boundary, duration_boundary=duration_boundary)
         return self.paired_points
 
     def getRestingPointsANDTimesPairs(self, radius=0.02, boundary=0.02):
@@ -910,8 +797,6 @@ class Trial:
             x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
             resting_points_times.append([x_point, y_point, z_point, duration])
         return resting_points_times
-
-
 
 # Only get the resting time list of a trial
     # --> [resting_times]
@@ -990,7 +875,8 @@ class Trial:
 
     # Only get the resting points list of a trial
     # --> [resting_points]
-    def getRestingPointsPairsTrial(self, radius = 0.02, boundary = 0.02):
+    def getRestingPointsPairs(self, radius = 0.02, boundary = 0.02):
+        self.getRestingHops()
         pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius, boundary=boundary)
         return resting_points
 
