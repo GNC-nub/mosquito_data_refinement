@@ -16,7 +16,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
 
     for trial_num in range(1, 65):
         trial = ClassMosquito.Trial(trial_num)
-        paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = trial.generatePairsForCSV(radius=radius, boundary=boundary)
+        paired_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = trial.generatePairsForCSV(radius=radius, boundary=boundary)
 
         new_trial_map = os.path.join(basemap_paired_path, f'Trial_{trial_num}')
         os.makedirs(new_trial_map, exist_ok=True)
@@ -110,6 +110,7 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
         new_boundary_trial_map = os.path.join(basemap_boundary_tracks_path, f'Trial_{trial_num}')
         os.makedirs(new_boundary_trial_map, exist_ok=True)
         print(f'Trial {trial_num}, stage3')
+
         for track_object in trial.getTrackObjects():
             if track_object.track_num not in altered_track_nums:
                 x, y, z, t = track_object.getTrack()
@@ -190,18 +191,19 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                             t_hop.append(t2[i2])
                         else:
                             take_off_added = True
-                            dictionary = {}
-                            title = f'Trial_{trial_num}_Paired_Walking_Track_{i}'
-                            dictionary[title] = {
-                                'x': x_hop,
-                                'y': y_hop,
-                                'z': z_hop,
-                                'time': t_hop
-                            }
-                            df = pd.DataFrame(dictionary)
-                            file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
-                            df.to_csv(file_path)
-                            x_hop, y_hop, z_hop, t_hop = [], [], [], []
+                            if x_hop:
+                                dictionary = {}
+                                title = f'Trial_{trial_num}_Paired_Walking_Track_{i}'
+                                dictionary[title] = {
+                                    'x': x_hop,
+                                    'y': y_hop,
+                                    'z': z_hop,
+                                    'time': t_hop
+                                }
+                                df = pd.DataFrame(dictionary)
+                                file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
+                                df.to_csv(file_path)
+                                x_hop, y_hop, z_hop, t_hop = [], [], [], []
         for i in range(len(stitch_num_land_walk_take)):
             print(f'Trial {trial_num}, stage6')
 
@@ -249,19 +251,20 @@ def makePairedCSVDataset(path_csv_folder, radius = 0.02, boundary = 0.02):
                             t_hop.append(t3[i3])
                         else:
                             take_off_added = True
-                            dictionary = {}
-                            title = f'Trial_{trial_num}_Paired_Track_{i}'
-                            dictionary[title] = {
-                                'x': x_hop,
-                                'y': y_hop,
-                                'z': z_hop,
-                                'time': t_hop
-                            }
-                            df = pd.DataFrame(dictionary)
-                            file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
-                            df.to_csv(file_path)
-                            x_hop, y_hop, z_hop, t_hop = [], [], [], []
+                            if x_hop:
+                                dictionary = {}
+                                title = f'Trial_{trial_num}_Paired_Track_{i}'
+                                dictionary[title] = {
+                                    'x': x_hop,
+                                    'y': y_hop,
+                                    'z': z_hop,
+                                    'time': t_hop
+                                }
+                                df = pd.DataFrame(dictionary)
+                                file_path = os.path.join(new_boundary_trial_map, f'{title}.csv')
+                                df.to_csv(file_path)
+                                x_hop, y_hop, z_hop, t_hop = [], [], [], []
 
 if __name__ =='__main__':
-    makePairedCSVDataset(path_csv_folder=path_csv_folder1, boundary= 0.02)
+    makePairedCSVDataset(path_csv_folder=path_csv_folder1, boundary= 0.01)
 

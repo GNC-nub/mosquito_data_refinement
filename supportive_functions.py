@@ -191,12 +191,11 @@ def function_velocity(x, delta_t):
         v = []
         for i in range(len(x)):
             v.append((x[i] - x[i - 1]) / delta_t)
-    print(f'nans in velocity {any(math.isnan(s) for s in v)}')
     return v
 
 def function_speeds(track):
     x, y, z, t = track
-    delta_t = t[1] - t[0]
+    delta_t = 0.01
     velocity_x = function_velocity(x, delta_t)
     velocity_y = function_velocity(y, delta_t)
     velocity_z = function_velocity(z, delta_t)
@@ -204,7 +203,6 @@ def function_speeds(track):
     for i in range(len(velocity_x)):
         speed = np.sqrt(velocity_x[i] ** 2 + velocity_y[i] ** 2 + velocity_z[i] ** 2)
         speeds.append(speed)
-    print(f' nans in speed {any(math.isnan(s) for s in speeds)}')
     return speeds
 
 def accessing_track(trial, track):
@@ -336,7 +334,6 @@ def accessing_paired_database(trial, boundary=0.02):
     csv.field_size_limit(sys.maxsize)
     trial_map = os.path.join(basemap_paired_path, f'Trial_{trial}')
     total_trial_data = []
-    total_bad_values = 0
     for file_name in os.listdir(trial_map):
         track_file = os.path.join(trial_map, file_name)  # looping through every file in a trial map
         if os.path.isfile(track_file):
@@ -354,12 +351,6 @@ def accessing_paired_database(trial, boundary=0.02):
                         val = val.strip()
                         if val:
                             if not (val.lower() == 'nan'):
-                                #print(f"NaN detected in {header} at row {i}: '{val}'")
-                                #total_bad_values += 1
-                                # Skip or replace as needed:
-                                # cleaned.append(0.0)  # Optional: replace NaN with 0
-                                # cleaned.append(None)  # Optional: for later handling
-                                #continue  # Or just skip it
                                 try:
                                     cleaned.append(float(val))
                                 except ValueError:
@@ -374,11 +365,7 @@ def accessing_paired_database(trial, boundary=0.02):
                         z_coordinates = cleaned
 
                 total_trial_data.append([x_coordinates, y_coordinates, z_coordinates, time_coordinates])
-
-    #print(f'In trial {trial} the nans are: {total_bad_values}')
     return total_trial_data
-
-
 
 def accessing_boundary_tracks(trial, boundary = 0.02):
     basemap_boundary_tracks_path = os.path.join(path_csv_folder1, f'boundary_tracks_{boundary}_csv')
@@ -393,18 +380,26 @@ def accessing_boundary_tracks(trial, boundary = 0.02):
                 header = dataset[0][1]
                 x_coordinates, y_coordinates, z_coordinates, time_coordinates = [], [], [], []
                 for i in range(1, 5):
-                    string = dataset[i][1]
-                    string = string.strip('[]')
-                    string = string.split(',')
-                    for value in string:
-                        if not value == '':  # to solve an error (ValueError: could not convert string to float: '')
-                            if i == 1:
-                                time_coordinates.append(float(value))
-                            if i == 2:
-                                x_coordinates.append(float(value))
-                            if i == 3:
-                                y_coordinates.append(float(value))
-                            if i == 4:
-                                z_coordinates.append(float(value))
-                total_trial_data.append([x_coordinates, y_coordinates, z_coordinates, time_coordinates])
+                    raw = dataset[i][1]
+                    # Clean up: remove brackets and split by commas
+                    raw = raw.strip().strip('[]')
+                    values = raw.split(',')
+                    cleaned = []
+                    for val in values:
+                        val = val.strip()
+                        if val:
+                            if not (val.lower() == 'nan'):
+                                try:
+                                    cleaned.append(float(val))
+                                except ValueError:
+                                    print(f"Skipping bad value: {val}")
+                    if i == 1:
+                        time_coordinates = cleaned
+                    elif i == 2:
+                        x_coordinates = cleaned
+                    elif i == 3:
+                        y_coordinates = cleaned
+                    elif i == 4:
+                        z_coordinates = cleaned
+            total_trial_data.append([x_coordinates, y_coordinates, z_coordinates, time_coordinates])
     return total_trial_data

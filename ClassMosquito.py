@@ -674,7 +674,6 @@ class Trial:
         used_walking_take_points = set()
         used_walking_landing_points = set()
         used_walking_tracks = set()
-        new_walking_tracks = []
 
         landings_to_remove = []
         take_offs_to_remove = []
@@ -689,10 +688,10 @@ class Trial:
         new_take_off_tracks = []
         new_landings_tracks = []
 
-        for distance_land, i_land, i_walk_land, landing_num, walking_num in potential_new_landing:
-            for distance_take, i_takeoff, i_walk_take, take_off_num, walking_num in potential_new_take_off:
-                if i_walk_land == i_walk_take:
-                    if i_land not in used_walking_landing_points and i_takeoff not in used_walking_take_points and i_walk_take not in used_walking_tracks:
+        for distance_land, i_land, i_walk_land, landing_num, walking_num_land in potential_new_landing:
+            for distance_take, i_takeoff, i_walk_take, take_off_num, walking_num_land in potential_new_take_off:
+                if walking_num_land == walking_num_land:
+                    if (i_land not in used_walking_landing_points) and (i_takeoff not in used_walking_take_points) and (i_walk_land not in used_walking_tracks):
                         used_walking_landing_points.add(i_land)
                         used_walking_take_points.add(i_takeoff)
                         used_walking_tracks.add(i_walk_land)
@@ -702,16 +701,16 @@ class Trial:
                                              zip(walking_tracks[i_walk_take][1], take_off_tracks[i_takeoff][1])]
                         merged_track = [a + b for a, b in zip(merged_lan_track, merged_take_track)]
                         paired_tracks.append(merged_track)
-                        stitch_num_land_walk_take.append([landing_num, walking_num, take_off_num])
+                        stitch_num_land_walk_take.append([landing_num, walking_num_land, take_off_num])
                         altered_track_nums.add(landing_num)
-                        altered_track_nums.add(walking_num)
+                        altered_track_nums.add(walking_num_land)
                         altered_track_nums.add(take_off_num)
                         landings_to_remove.append(i_land)
                         take_offs_to_remove.append(i_takeoff)
                         walkings_to_remove.append(i_walk_land)
 
         for distance, i_land, i_walk, landing_num, walking_num in potential_new_landing:
-            if i_land not in used_walking_landing_points and i_walk not in used_walking_tracks:
+            if (i_land not in used_walking_landing_points) and (i_walk not in used_walking_tracks):
                 used_walking_landing_points.add(i_land)
                 used_walking_tracks.add(i_walk)
                 stitch_num_land_walk.append([landing_num, walking_num])
@@ -720,10 +719,10 @@ class Trial:
                 merged_lan_track = [a + b for a, b in zip(landing_tracks[i_land][1], walking_tracks[i_walk][1])]
                 landings_to_remove.append(i_land)
                 walkings_to_remove.append(i_walk)
-                new_landings_tracks.append(merged_lan_track)
+                new_landings_tracks.append([landing_num, merged_lan_track])
 
         for distance, i_takeoff, i_walk, take_off_num, walking_num in potential_new_take_off:
-            if i_takeoff not in used_walking_take_points and i_walk not in used_walking_tracks:
+            if (i_takeoff not in used_walking_take_points) and (i_walk not in used_walking_tracks):
                 used_walking_take_points.add(i_takeoff)
                 used_walking_tracks.add(i_walk)
                 stitch_num_walk_take.append([walking_num, take_off_num])
@@ -732,12 +731,16 @@ class Trial:
                 merged_take_track = [a + b for a, b in zip(walking_tracks[i_walk][1], take_off_tracks[i_takeoff][1])]
                 take_offs_to_remove.append(i_takeoff)
                 walkings_to_remove.append(i_walk)
-                new_take_off_tracks.append(merged_take_track)
+                new_take_off_tracks.append([take_off_num, merged_take_track])
 
         for i_land in sorted(landings_to_remove, reverse=True):
             landing_tracks.pop(i_land)
+        for track in new_landings_tracks:
+            landing_tracks.append(track)
         for i_takeoff in sorted(take_offs_to_remove, reverse=True):
             take_off_tracks.pop(i_takeoff)
+        for track in new_take_off_tracks:
+            take_off_tracks.append(track)
 
         potential_pairs = []
         for i_land, landings in enumerate(landing_tracks):
@@ -762,7 +765,7 @@ class Trial:
         used_landing_points = set()
 
         for distance, i_land, i_takeoff, landing_num, take_off_num in potential_pairs:
-            if i_takeoff not in used_takeoff_points:
+            if (i_takeoff not in used_takeoff_points) and (i_land not in used_landing_points):
                 used_takeoff_points.add(i_takeoff)
                 used_landing_points.add(i_land)
                 merge_track = [a + b for a, b in zip(landing_tracks[i_land][1], take_off_tracks[i_takeoff][1])]
@@ -777,7 +780,7 @@ class Trial:
         for i, item in enumerate(take_off_tracks):
             if i not in used_takeoff_points and item[1]:
                 new_take_off_tracks.append(item[1])
-        return paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums
+        return paired_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums
 
 
 #VERWIJDEREN
@@ -922,13 +925,6 @@ class Trial:
     def getSpeedsTrial(self, boundary=0.02):
         self.initiateCoordinateListFromPairedDataset(boundary=boundary)
         all_tracks = self.coordinates_trial_from_paired
-        has_nan = any(
-            math.isnan(value)
-            for track in all_tracks
-            for coordinate in track
-            for value in coordinate
-        )
-        print(f'nans in tracks: {has_nan}')
         all_speeds = []
         for track in all_tracks:
             if len(track[0]) > 1:
@@ -954,7 +950,8 @@ class Trial:
         for track in all_tracks:
             if len(track[0]) > 1:
                 speeds = function_speeds(track)
-                all_speeds.append(speeds)
+                for speed in speeds:
+                    all_speeds.append(speed)
         return all_speeds
 
     def initializeLandingTracksTrial(self, radius = 0.02, boundary = 0.02):
@@ -1772,7 +1769,8 @@ class Dataset:
         all_speeds =[]
         for trial_object in self.trialobjects:
             speeds = trial_object.getSpeedsBoundaryTracksTrial(boundary=boundary)
-            all_speeds.append(speeds)
+            for speed in speeds:
+                all_speeds.append(speed)
         return sum(all_speeds) / len(all_speeds)
 
 #NIEUW
