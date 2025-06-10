@@ -348,16 +348,26 @@ class Trial:
 
 # All the coordinates of one trial N
     # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ] , exe... ]
+
+    def initiateCoordinateList(self):
+        self.coordinate_list_trial = accessing_trial(self.trial_num)
     def getTrial(self):
         if self.coordinate_list_trial == None:
             self.initiateCoordinateList()
         return self.coordinate_list_trial
+
+
+    def initiateCoordinateListFromPairedDataset(self, boundary = 0.02):
+        self.coordinates_trial_from_paired = accessing_paired_database(self.trial_num, boundary = boundary)
 
     def getTrialfromPairedDataset(self, boundary = 0.02):
         if self.coordinates_trial_from_paired == None or self.boundary != boundary:
             self.initiateCoordinateListFromPairedDataset(boundary = boundary)
             self.boundary = boundary
         return self.coordinates_trial_from_paired
+
+    def initiateBoundaryTracks(self, boundary = 0.02):
+        self.boundary_tracks = accessing_boundary_tracks(self.trial_num, boundary = boundary)
 
     def getBoundaryTracks(self, boundary = 0.02):
         if self.boundary_tracks == None or self.boundary != boundary :
@@ -375,17 +385,6 @@ class Trial:
             obj = Track(trial_num=self.trial_num, track_num=track_num)
             object_array.append(obj)
         return object_array
-
-# Initializes self.coordinate_list_trial, aka a list of all the point in a trial N
-    # --> [ [header, [x_coordinates], [y_coordinates], [z_coordinates], [time] ], exe... ]
-    def initiateCoordinateList(self):
-        self.coordinate_list_trial = accessing_trial(self.trial_num)
-
-    def initiateCoordinateListFromPairedDataset(self, boundary = 0.02):
-        self.coordinates_trial_from_paired = accessing_paired_database(self.trial_num, boundary = boundary)
-
-    def initiateBoundaryTracks(self, boundary = 0.02):
-        self.boundary_tracks = accessing_boundary_tracks(self.trial_num, boundary = boundary)
 
 # First/last coordinates #
 
@@ -617,7 +616,7 @@ class Trial:
                                                                                                             boundary=boundary)
         return paired_tracks
 
-# Via getTrialfromPairedDataset alle boundary data
+# Via get TrialfromPairedDataset alle boundary data
     def initiateBoundaryData(self, boundary = 0.02, duration_boundary = 0.3):
         if self.boundary != boundary or self.duration_boundary != duration_boundary or self.complete_hops == None or self.incomplete_hops_count == None:
             all_tracks = self.getTrialfromPairedDataset(boundary=boundary)
@@ -668,18 +667,22 @@ class Trial:
             self.incomplete_hops_count = incomplete_hops_count
 
 #NIEUW!
-    def getTouchdownsTrial(self, boundary = 0.02, duration_boundary = 0.03):
+    def getTouchdownsTrial(self, boundary = 0.02, duration_boundary = 0.3):
         self.initiateBoundaryData(boundary=boundary, duration_boundary=duration_boundary)
         return self.touchdown_hops
+    def countTouchdownsTrial(self, boundary = 0.02, duration_boundary = 0.3):
+        return len(self.getTouchdownsTrial(boundary=boundary, duration_boundary=duration_boundary))
 #NIEUW
     def getCompleteHops(self, boundary = 0.02, duration_boundary = 0.03):
         self.initiateBoundaryData(boundary=boundary, duration_boundary=duration_boundary)
         return self.complete_hops
 
 #Nieuw
-    def getRestingHops(self, boundary=0.02, duration_boundary=0.03):
+    def getRestingHops(self, boundary=0.02, duration_boundary=0.3):
         self.initiateBoundaryData(boundary=boundary, duration_boundary=duration_boundary)
         return self.resting_hops
+    def countLongRestsTrial (self, boundary=0.02, duration_boundary=0.3):
+        return len(self.getRestingHops(boundary=boundary, duration_boundary=duration_boundary))
 
 #Nieuw
     def countIncompleteHops(self, boundary=0.02, duration_boundary=0.03):
@@ -740,6 +743,11 @@ class Trial:
                 points.append([x_point, y_point, z_point])
             self.touchdown_points = points
 
+    def getRetingPointsTouchdown(self, boundary = 0.02, duration_boundary = 0.03):
+        if self.touchdown_points == None:
+            self.initializeRestingPointsTouchdown(boundary=boundary, duration_boundary=duration_boundary)
+        return self.touchdown_points
+
     def initializeLongRestingPoints(self, radius = 0.02, boundary = 0.02, duration_boundary = 0.03):
         if not self.long_resting_points or self.boundary != boundary or self.radius != radius:
             points = []
@@ -750,19 +758,26 @@ class Trial:
             self.long_resting_points = points
             self.boundary = boundary
             self.radius = radius
+    def getRetingPointsLongRests(self, boundary = 0.02, duration_boundary = 0.03):
+        if self.long_resting_points == None:
+            self.initializeLongRestingPoints(boundary=boundary, duration_boundary=duration_boundary)
+        return self.long_resting_points
 
     def initializePairedRestingPoints(self, radius = 0.02, boundary= 0.02, duration_boundary = 0.03):
         if not self.paired_points or self.boundary != boundary or self.radius != radius:
             points = []
-            for hop in self.getRestingHops(boundary=boundary, duration_boundary=duration_boundary):
+            for hop in self.getPairedTracksTrial(radius = 0.02, boundary=boundary):
                 x, y, z, t = hop
                 x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
                 points.append([x_point, y_point, z_point])
             self.paired_points = points
             self.boundary = boundary
             self.radius = radius
+    def getPairedPoints(self, radius=0.02, boundary=0.02, duration_boundary=0.03):
+        self.initializePairedRestingPoints(radius=radius, boundary=boundary, duration_boundary=duration_boundary)
+        return self.paired_points
 
-    def initializeRestingPoints(self, radius = 0.02, boundary= 0.02, duration_boundary = 0.03):
+    def initializeAllRestingPoints(self, radius = 0.02, boundary= 0.02, duration_boundary = 0.03):
         if not self.all_resting_points or self.boundary != boundary or self.radius != radius:
             points = []
             for hop in self.getCompleteHops(boundary=boundary, duration_boundary=duration_boundary):
@@ -773,10 +788,10 @@ class Trial:
             self.boundary = boundary
             self.radius = radius
 
+    def getAllRestingPoints(self, radius = 0.02, boundary = 0.02, duration_boundary = 0.03):
+        if not self.all_resting_points or self.boundary != boundary:
+            self.initializeAllRestingPoints(radius = radius, boundary=boundary, duration_boundary=duration_boundary)
 
-    def getPairedPoints(self, radius=0.02, boundary=0.02, duration_boundary = 0.03):
-        self.initializePairedRestingPoints(radius=radius, boundary=boundary, duration_boundary=duration_boundary)
-        return self.paired_points
 
     def getRestingPointsANDTimesPairs(self, radius=0.02, boundary=0.02):
         tracks = self.getPairedTracksTrial(radius=radius, boundary=boundary)
@@ -788,8 +803,8 @@ class Trial:
             resting_points_times.append([x_point, y_point, z_point, duration])
         return resting_points_times
 
-    def getRestingPointsANDTimesTouchdown(self, radius = 0.02, boundary = 0.02):
-        tracks = self.getTouchdownsTrial(boundary=boundary)
+    def getRestingPointsANDTimesTouchdown(self, boundary = 0.02, duration_boundary = 0.03):
+        tracks = self.getTouchdownsTrial(boundary=boundary, duration_boundary=duration_boundary)
         resting_points_times = []
         for track in tracks:
             x, y, z, t = track
@@ -798,132 +813,66 @@ class Trial:
             resting_points_times.append([x_point, y_point, z_point, duration])
         return resting_points_times
 
-# Only get the resting time list of a trial
-    # --> [resting_times]
-    def getRestingTimePairsTrial(self, radius = 0.02, boundary = 0.02):
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius, boundary=boundary)
-        return resting_times
-
-    def getRestingTimeTakeOffsTrial(self, radius = 0.02, boundary = 0.02):
-        self.initializeTakeOffTracksTrial(radius= radius,boundary=boundary)
-        resting_times = []
-        for take_off in self.take_off_tracks:
-            x, y, z, t = take_off
-            resting_time = (t[-1] - t[0])
-            resting_times.append(resting_time)
-        return resting_times
-
-    def getRestingTimeLandingsTrial(self, radius = 0.02, boundary = 0.02):
-        self.initializeLandingTracksTrial(radius= radius,boundary=boundary)
-        resting_times = []
-        for landing in self.landing_tracks:
-            x, y, z, t = landing
-            resting_time = (t[-1] - t[0])
-            resting_times.append(resting_time)
-        return resting_times
-
-    def getRestingTimeHoppingsTrial(self, boundary = 0.02):
-        self.initializeHoppingCoordinatesTrial(boundary=boundary)
-        resting_times = []
-
-        for hop in self.hopping_tracks:
-            x, y, z, t = hop
-            duration = t[-1] - t[0]
-            resting_times.append(duration)
-        return resting_times
-
-    def getRestingTimeWalkingsTrial(self, radius = 0.02, boundary = 0.02):
-        self.initializeWalkingTrackTrial(radius=radius,boundary=boundary)
-        resting_times = []
-
-        for hop in self.walking_tracks:
-            x, y, z, t = hop
-            duration = t[-1] - t[0]
-            resting_times.append(duration)
-        return resting_times
-
-    def getRestingTimeTrial(self, radius=0.02, boundary=0.02):
-        hoppings = self.getRestingTimeHoppingsTrial(boundary = boundary)
-        landings = self.getRestingTimeLandingsTrial(radius=radius, boundary=boundary)
-        take_offs = self.getRestingTimeTakeOffsTrial(radius=radius, boundary=boundary)
-        pairs = self.getRestingTimePairsTrial(radius = radius, boundary=boundary)
-        walking = self.getRestingTimeWalkingsTrial(radius = radius, boundary=boundary)
-        return hoppings + landings + take_offs + pairs + walking
-
-    def getRestingPointsTrial(self, radius=0.02, boundary=0.02):
-        if not self.paired_points:
-            self.initializePairedPoints(radius=radius, boundary=boundary)
-        if not self.hopping_points:
-            self.initializeHoppingPoints(boundary=boundary)
-        if not self.landing_points:
-            self.initializeLandingPoints(radius=radius, boundary=boundary)
-        if not self.take_off_points:
-            self.initializeTakeOffPoints(radius=radius, boundary=boundary)
-        if not self.walking_points:
-            self.initializeWalkingPoints(radius=radius, boundary=boundary)
-        return self.hopping_points + self.landing_points + self.take_off_points + self.paired_points + self.walking_points
-
-    def getRestingTimesANDPointsTrial(self, radius = 0.02, boundary = 0.02):
-        all_tracks = self.getAllTracksInBoundaryTrial(radius=radius, boundary=boundary)
+    def getRestingPointsANDTimesLongRests(self, duration_boundary = 0.03, boundary = 0.02):
+        tracks = self.getRestingHops(boundary=boundary, duration_boundary=duration_boundary)
         resting_points_times = []
-        for track in all_tracks:
+        for track in tracks:
             x, y, z, t = track
             duration = t[-1] - t[0]
             x_point, y_point, z_point, t_point = nearest_neighbor_to_trap_surface(x, y, z, t)
             resting_points_times.append([x_point, y_point, z_point, duration])
         return resting_points_times
 
-    # Only get the resting points list of a trial
-    # --> [resting_points]
-    def getRestingPointsPairs(self, radius = 0.02, boundary = 0.02):
-        self.getRestingHops()
-        pairs, resting_times, resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(radius, boundary=boundary)
-        return resting_points
+    def getRestingTimePairs(self, radius=0.02, boundary=0.02):
+        pairs = self.getRestingPointsANDTimesPairs(radius = radius, boundary=boundary)
+        resting_times = []
+        for track in pairs:
+            x_point, y_point, z_point, duration = track
+            resting_times.append(duration)
+        return resting_times
+    def getRestingTimeTouchdown(self, boundary=0.02, duration_boundary =0.03):
+        touchdowns = self.getRestingPointsANDTimesTouchdown(boundary=boundary, duration_boundary = duration_boundary )
+        resting_times = []
+        for track in touchdowns:
+            x_point, y_point, z_point, duration = track
+            resting_times.append(duration)
+        return resting_times
+
+    def getRestingTimeLongRests(self, boundary=0.02, duration_boundary = 0.03):
+        long_rests = self.getRestingPointsANDTimesLongRests(boundary=boundary, duration_boundary = duration_boundary)
+        resting_times = []
+        for track in long_rests:
+            x_point, y_point, z_point, duration = track
+            resting_times.append(duration)
+        return resting_times
+
+    def getALLRestingTimesTrial(self, radius = 0.02, boundary=0.02, duration_boundary = 0.03):
+        touchdown = self.getRestingTimeTouchdown(boundary=boundary, duration_boundary = duration_boundary)
+        long_rests = self.getRestingTimeLongRests(boundary=boundary, duration_boundary = duration_boundary)
+        return touchdown + long_rests
+
+    def getALlRestingPointsTrial(self, radius=0.02, boundary=0.02,duration_boundary = 0.03 ):
+        touchdown = self.getRetingPointsTouchdown(boundary=boundary, duration_boundary=duration_boundary)
+        long_rests = self.getRetingPointsLongRests(boundary=boundary, duration_boundary=duration_boundary)
+        return touchdown + long_rests
+
+    def getRestingTimesANDPointsTrial(self, radius = 0.02, boundary = 0.02, duration_boundary = 0.03):
+        touchdown = self.getRestingPointsANDTimesTouchdown(boundary=boundary, duration_boundary=duration_boundary)
+        long_rests = self.getRestingPointsANDTimesLongRests(boundary=boundary, duration_boundary=duration_boundary)
+        return touchdown + long_rests
 
 
 # Get the total number of associated (landing -- take-off) pairs of a trial
     # --> amount
     def countPairsTrial(self, radius = 0.02, boundary = 0.02):
-        paired_tracks, paired_resting_times, paired_resting_points, new_landings_tracks, new_take_off_tracks, new_walking_tracks = self.generatePairs(
+        paired_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = self.generatePairsForCSV(
             radius,
             boundary=boundary)
         return len(paired_tracks)
 
-    def countPairsTrial_paired_dataset(self, radius = 0.02, boundary = 0.02):
-        paired_tracks, new_landings_tracks, new_take_off_tracks, new_walking_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = self.generatePairsForCSV(
-            radius,
-            boundary=boundary)
-        return len(paired_tracks)
 
-    def countALlTrackEnteringBoundary(self, boundary= 0.02):
-        if not self.take_off_points or self.boundary != boundary:
-            self.initializeTakeOffTracksTrial(boundary=boundary)
-            self.boundary = boundary
-        count = 0
-        for track_object in self.track_objects:
-            if track_object.boolResting(boundary = boundary):
-                count += 1
-        return count
-
-
-    def countWalkingTracksTrial(self, radius = 0.02, boundary = 0.02):
-        self.initializeWalkingTrackTrial(radius=radius, boundary=boundary)
-        return len(self.walking_tracks)
-
-    def countHoppingsTrial(self, boundary = 0.02):
-        self.initializeHoppingCoordinatesTrial(boundary=boundary)
-        return len(self.hopping_tracks)
-
-    def countLandingsTrial(self, radius = 0.02, boundary = 0.02):
-        self.initializeLandingTracksTrial(radius=radius, boundary=boundary)
-        return len(self.landing_tracks)
-
-    def countTakeOffTrial(self, radius = 0.02, boundary = 0.02):
-        self.initializeTakeOffTracksTrial(radius=radius, boundary=boundary)
-        return len(self.take_off_tracks)
-
-    def getDisplacementsTrial(self, radius = 0.02, boundary = 0.02):
-        tracks = self.getAllTracksInBoundaryTrial(radius=radius, boundary=boundary)
+    def getDisplacementsTrial(self, boundary = 0.02):
+        tracks = self.getBoundaryTracks(boundary=boundary)
         displacements = []
         for track in tracks:
             x, y, z, t = track
@@ -1537,6 +1486,7 @@ class Dataset:
         for trial_object in self.trialobjects:
             count += trial_object.countTakeOffTrial(radius=radius, boundary=boundary)
         return count
+
     def countRestingPairs(self, radius = 0.02, boundary=0.02):
         if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
             self.radius = radius
@@ -1544,53 +1494,47 @@ class Dataset:
             self.trialobjects = self.getTrialObjects()
         count = 0
         for trial_object in self.trialobjects:
-            print(f'OG dataset: trial {trial_object.trial_num}')
             count += trial_object.countPairsTrial(radius=radius, boundary=boundary)
         return count
 
-    def countPairs_paired_dataset(self, radius = 0.02, boundary=0.02):
-        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
-            self.radius = radius
+    def countTouchdowns(self,boundary=0.02, duration_boundary = 0.03):
+        if self.trialobjects == None or self.boundary != boundary:
             self.boundary = boundary
             self.trialobjects = self.getTrialObjects()
         count = 0
         for trial_object in self.trialobjects:
-            print(f'Paired dataset: trial {trial_object.trial_num}')
-            count += trial_object.countPairsTrial_paired_dataset(radius=radius, boundary=boundary)
+            count += trial_object.countTouchdownsTrial(boundary=boundary, duration_boundary=duration_boundary)
         return count
 
-
-    def countHoppings(self, boundary=0.02):
+    def countLongRests(self, boundary=0.02, duration_boundary = 0.03):
         if self.trialobjects == None  or self.boundary != boundary:
             self.boundary = boundary
             self.trialobjects = self.getTrialObjects()
         count = 0
         for trial_object in self.trialobjects:
-            count += trial_object.countHoppingsTrial(boundary=boundary)
+            count += trial_object.countLongRestsTrial(boundary=boundary, duration_boundary=duration_boundary)
         return count
     def countAllTracks(self):
         return sum(self.getNumTracksPerTrial())
 
 
 
-    def plotQuantificationHistogramTracks(self, radius = 0.02, boundary=0.02):
-        walkings = self.countWalkings(radius=radius, boundary=boundary)
-        landings = self.countLandings(radius=radius, boundary=boundary)
-        take_offs = self.countTakeOffs(radius=radius, boundary=boundary)
-        pairs = self.countRestingPairs(radius=radius, boundary=boundary)
-        hoppings = self.countHoppings(boundary=boundary)
+    def plotQuantificationHistogramTracks(self, boundary=0.02, duration_boundary = 0.3):
+        touchdowns = self.countTouchdowns(boundary=boundary, duration_boundary=duration_boundary)
+        pairs = self.countRestingPairs(boundary=boundary)
+        long_rests = self.countLongRests(boundary=boundary, duration_boundary=duration_boundary)
 
-        values = [hoppings, landings, take_offs, pairs, walkings]
-        labels = [f'Hoppings; {hoppings}', f'Landings: {landings}', f'Take offs: {take_offs}', f'Pairs: {pairs}', f'Walkings: {walkings}']
-        colors = ['red', 'blue', 'green', 'orange', 'purple']
+        values = [touchdowns, long_rests, pairs]
+        labels = [f'Touchdowns; {touchdowns}', f'Long_rests: {long_rests}', f'Pairs: {pairs}']
+        colors = ['red', 'blue', 'green']
 
         bottom = 0
         for i in range(len(values)):
             plt.bar(0, values[i], bottom=bottom, color=colors[i], label=labels[i])
             bottom += values[i]
 
-        plt.ylabel('NUmber of track parts per group')
-        plt.title('Quantification of Hoppings, landings, take-offs, resting pairs and walkings\nin the total dataset.')
+        plt.ylabel('Number of track parts per group')
+        plt.title('Quantification of touchdowns, long_rests and pairs in the total dataset.')
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
         plt.show()
@@ -1763,25 +1707,35 @@ class Dataset:
                 dataset.append(point)
         return dataset
 
-    def getRestingTimeHoppings(self, boundary = 0.02):
+    def getRestingTimeLongRests(self, boundary = 0.02, duration_boundary = 0.3):
         if self.trialobjects == None or self.boundary != boundary:
             self.boundary = boundary
             self.trialobjects = self.getTrialObjects()
         dataset = []
         for trial_object in self.trialobjects:
-            trial = trial_object.getRestingTimeHoppingsTrial(boundary=boundary)
+            trial = trial_object.getRestingTimeLongRests(boundary=boundary, duration_boundary=duration_boundary)
             for point in trial:
                 dataset.append(point)
         return dataset
 
-    def getRestingTimeLandings(self, radius = 0.02, boundary = 0.02):
-        if self.trialobjects == None or self.radius != radius or self.boundary != boundary:
-            self.radius = radius
+    def getRestingTimeTouchdowns(self, boundary = 0.02, duration_boundary = 0.3):
+        if self.trialobjects == None or self.boundary != boundary:
             self.boundary = boundary
             self.trialobjects = self.getTrialObjects()
         dataset = []
         for trial_object in self.trialobjects:
-            trial = trial_object.getRestingTimeLandingsTrial(radius=radius, boundary=boundary)
+            trial = trial_object.getRestingTimeTouchdown(boundary=boundary, duration_boundary=duration_boundary)
+            for point in trial:
+                dataset.append(point)
+        return dataset
+
+    def getAllRestingTimes(self, radius = 0.02, boundary = 0.02, duration_boundary = 0.3):
+        if self.trialobjects == None or self.boundary != boundary:
+            self.boundary = boundary
+            self.trialobjects = self.getTrialObjects()
+        dataset = []
+        for trial_object in self.trialobjects:
+            trial = trial_object.getALLRestingTimesTrial(radius = radius, boundary=boundary, duration_boundary=duration_boundary)
             for point in trial:
                 dataset.append(point)
         return dataset
@@ -3064,15 +3018,12 @@ class Dataset:
         plt.show()
 
 
-    def plotRestingTimesViolin(self, radius = 0.02, boundary = 0.02):
-        all_resting_times = self.getRestingTimes(radius=radius, boundary=boundary)
-        hoppings = self.getRestingTimeHoppings(boundary=boundary)
-        landings = self.getRestingTimeLandings(radius=radius, boundary=boundary)
-        take_offs = self.getRestingTimeTakeOffs(radius=radius, boundary=boundary)
-        walkings = self.getRestingTimeWalkings(radius=radius, boundary=boundary)
-        pairs = self.getRestingTimePairs(radius=radius, boundary=boundary)
-        data = [hoppings, landings, take_offs, walkings, pairs, all_resting_times]
-        titles = ['Hoppings', 'Landings', 'Take-offs', 'walkings', 'Resting pairs', 'All resting times']
+    def plotRestingTimesViolin(self, boundary = 0.02, duration_boundary = 0.3):
+        all_resting_times = self.getAllRestingTimes(boundary=boundary, duration_boundary= duration_boundary)
+        long_rests  = self.getRestingTimeLongRests(boundary=boundary, duration_boundary = duration_boundary)
+        touchdowns = self.getRestingTimeTouchdowns(boundary=boundary, duration_boundary = duration_boundary)
+        data = [touchdowns, long_rests, all_resting_times]
+        titles = ['Touchdowns', 'Long rests', 'All resting times']
         fig, axs = plt.subplots(nrows=1, ncols=len(data))
         for i, ax in enumerate(axs):
             ax.violinplot([data[i]], showmeans=True)
