@@ -363,7 +363,6 @@ def accessing_paired_database(trial, boundary=0.02):
                         y_coordinates = cleaned
                     elif i == 4:
                         z_coordinates = cleaned
-
                 total_trial_data.append([x_coordinates, y_coordinates, z_coordinates, time_coordinates])
     return total_trial_data
 

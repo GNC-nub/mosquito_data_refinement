@@ -626,41 +626,50 @@ class Trial:
             incomplete_hops_count = 0
             for track in all_tracks:
                 x, y, z, t = track
-                if not (landing_area(x[0], y[0], z[0], boundary=boundary) or landing_area(x[-1], y[-1], z[-1], boundary=boundary)):
-                    in_run = False
-                    x_hop, y_hop, z_hop, t_hop = [], [], [], []
-                    num_hops = 0
-                    for i in range(len(x)):
-                        if landing_area(x[i], y[i], z[i], boundary=boundary):
-                            if not in_run:
-                                # Start time of a landing
-                                in_run = True
-                                x_hop = [x[i]]
-                                y_hop = [y[i]]
-                                z_hop = [z[i]]
-                                t_hop = [t[i]]
-                            else:
-                                x_hop.append(x[i])
-                                y_hop.append(y[i])
-                                z_hop.append(z[i])
-                                t_hop.append(t[i])
+                in_run = False
+                x_hop, y_hop, z_hop, t_hop = [], [], [], []
+                num_hops = 0
+                for i in range(len(x)):
+                    if landing_area(x[i], y[i], z[i], boundary=boundary):
+                        if not in_run:
+                            # Start time of a landing
+                            in_run = True
+                            x_hop = [x[i]]
+                            y_hop = [y[i]]
+                            z_hop = [z[i]]
+                            t_hop = [t[i]]
                         else:
-                            if in_run:
-                                # End time of a landing
-                                in_run = False
-                                num_hops += 1
-                                complete_hops.append([x_hop, y_hop, z_hop, t_hop])
-                                if t[-1] - t[0] < duration_boundary:
-                                    touchdown_hops.append([x_hop, y_hop, z_hop, t_hop])
-                                else:
-                                    resting_hops.append([x_hop, y_hop, z_hop, t_hop])
-                                x_hop, y_hop, z_hop, t_hop = [], [], [], []
-                        if in_run:
-                            # When a track ends in landing, the landing still gets added
+                            x_hop.append(x[i])
+                            y_hop.append(y[i])
+                            z_hop.append(z[i])
+                            t_hop.append(t[i])
+                    elif in_run:
+                        # End time of a hop
+                        if landing_area(x[0], y[0], z[0], boundary=boundary) and x[0] == x_hop[0] and y[0] == y_hop[0] and z[0] == z_hop[0]:
+                            #When starting in take-off, not a complete hop
+                            incomplete_hops_count += 1
+                            in_run = False
+                            num_hops += 1
+                            x_hop, y_hop, z_hop, t_hop = [], [], [], []
+                        else:
                             num_hops += 1
                             complete_hops.append([x_hop, y_hop, z_hop, t_hop])
-                else:
-                    incomplete_hops_count += 1
+                            if 0 < t_hop[-1] - t_hop[0] < duration_boundary:
+                                touchdown_hops.append([x_hop, y_hop, z_hop, t_hop])
+                            elif t_hop[-1] - t_hop[0] > duration_boundary:
+                                resting_hops.append([x_hop, y_hop, z_hop, t_hop])
+                            elif 0 > t_hop[-1] - t_hop[0]:
+                                print('!ERROR! THE DURATION IS SMALLER THAN 0\n')
+                                print(f'Trial {self.trial_num}\n')
+                                print(f'Track: {x_hop}\n{t_hop}')
+                            x_hop, y_hop, z_hop, t_hop = [], [], [], []
+                            in_run = False
+                    if in_run and i == len(x):
+                        print(f'Stage4 {x_hop}')
+                        # When a track ends in landing, not a complete hop
+                        incomplete_hops_count += 1
+                        in_run = False
+                        x_hop, y_hop, z_hop, t_hop = [], [], [], []
             self.complete_hops = complete_hops
             self.touchdown_hops = touchdown_hops
             self.resting_hops = resting_hops
@@ -668,7 +677,10 @@ class Trial:
 
 #NIEUW!
     def getTouchdownsTrial(self, boundary = 0.02, duration_boundary = 0.3):
-        self.initiateBoundaryData(boundary=boundary, duration_boundary=duration_boundary)
+        if self.touchdown_hops == None or self.boundary != boundary or self.duration_boundary != duration_boundary:
+            self.initiateBoundaryData(boundary=boundary, duration_boundary=duration_boundary)
+            self.boundary = boundary
+            self.duration_boundary = duration_boundary
         return self.touchdown_hops
     def countTouchdownsTrial(self, boundary = 0.02, duration_boundary = 0.3):
         return len(self.getTouchdownsTrial(boundary=boundary, duration_boundary=duration_boundary))
@@ -1497,7 +1509,7 @@ class Dataset:
             count += trial_object.countPairsTrial(radius=radius, boundary=boundary)
         return count
 
-    def countTouchdowns(self,boundary=0.02, duration_boundary = 0.03):
+    def countTouchdowns(self,boundary=0.02, duration_boundary = 0.3):
         if self.trialobjects == None or self.boundary != boundary:
             self.boundary = boundary
             self.trialobjects = self.getTrialObjects()
@@ -1506,7 +1518,7 @@ class Dataset:
             count += trial_object.countTouchdownsTrial(boundary=boundary, duration_boundary=duration_boundary)
         return count
 
-    def countLongRests(self, boundary=0.02, duration_boundary = 0.03):
+    def countLongRests(self, boundary=0.02, duration_boundary = 0.3):
         if self.trialobjects == None  or self.boundary != boundary:
             self.boundary = boundary
             self.trialobjects = self.getTrialObjects()
@@ -1519,7 +1531,7 @@ class Dataset:
 
 
 
-    def plotQuantificationHistogramTracks(self, boundary=0.02, duration_boundary = 0.3):
+    def plotQuantificationHistogram(self, boundary=0.02, duration_boundary = 0.3):
         touchdowns = self.countTouchdowns(boundary=boundary, duration_boundary=duration_boundary)
         pairs = self.countRestingPairs(boundary=boundary)
         long_rests = self.countLongRests(boundary=boundary, duration_boundary=duration_boundary)
