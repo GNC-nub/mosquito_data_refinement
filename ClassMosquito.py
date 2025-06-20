@@ -449,6 +449,8 @@ class Trial:
 
 
 #  Generates the most likely resting pairs in a dictionary, with lists of the resting time
+
+    # TIJD KLOPT NIET! take off connected to landing that lands after take off
     def generatePairsForCSV(self, radius=0.02, boundary=0.02):
         if self.track_objects == None or self.boundary != boundary or self.radius != radius:
             self.track_objects = self.getTrackObjects()
@@ -483,8 +485,7 @@ class Trial:
                         dx, dy, dz, dtime = (x_walk_beg - x_land_end), (y_walk_beg - y_land_end), (
                                 z_walk_beg - z_land_end), (time_walk_beg - time_land_end)
                         distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
-                        resting_at_merge = dtime
-                        if distance < radius and resting_at_merge > 0:
+                        if (distance < radius and dtime > 0):
                             potential_new_landing.append((distance, i_land, i_walk, landing_num, walking_num))
                 for i_takeoff, take_offs in enumerate(take_off_tracks):
                     take_off_num, take_off = take_offs
@@ -495,7 +496,7 @@ class Trial:
                                 z_take_beg - z_walk_end), (time_take_beg - time_walk_end)
                         distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
                         resting_at_merge = dtime
-                        if distance < radius and resting_at_merge > 0:
+                        if (distance < radius and resting_at_merge > 0):
                             potential_new_take_off.append((distance, i_takeoff, i_walk, take_off_num, walking_num))
 
         potential_new_landing.sort()
@@ -586,7 +587,7 @@ class Trial:
                                 z_take_beg - z_land_end), (time_take_beg - time_land_end)
                         resting_at_merge = dtime
                         distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
-                        if distance < radius and resting_at_merge > 0:
+                        if (distance < radius and resting_at_merge > 0):
                             potential_pairs.append((distance, i_land, i_takeoff, landing_num, take_off_num))
 
         potential_pairs.sort()
@@ -610,6 +611,56 @@ class Trial:
             if i not in used_takeoff_points and item[1]:
                 new_take_off_tracks.append(item[1])
         return paired_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums
+
+    def generationPairsEasyVertsion(self, radius=0.02, boundary=0.02):
+        trial = self.getTrial()
+        landing_tracks = []
+        take_off_tracks = []
+        walking_tracks = []
+        other_tracks = []
+        for track in trial:
+            x, y, z, t = track
+            if landing_area(x[-1], y[-1], z[-1], boundary=boundary) and landing_area(x[0], y[0], z[0], boundary=boundary):
+                walking_tracks.append([x, y, z, t])
+            elif landing_area(x[-1], y[-1], z[-1], boundary=boundary):
+                landing_tracks.append([x, y, z, t])
+            elif landing_area(x[0], y[0], z[0], boundary=boundary):
+                take_off_tracks.append([x, y, z, t])
+            else:
+                other_tracks.append([x, y, z, t])
+
+
+        potential_pairs = []
+        new_takeoff_tracks = []
+        new_landing_tracks = []
+        for i_land, landing in enumerate(landing_tracks):
+                x_land, y_land, z_land, t_land = landing
+                x_land_end, y_land_end, z_land_end, time_land_end = x_land[-1], y_land[-1], z_land[-1], t_land[-1]
+                for i_take, take_off in enumerate(take_off_tracks):
+                        x_take, y_take, z_take, t_take = take_off
+                        x_take_beg, y_take_beg, z_take_beg, time_take_beg = x_take[0], y_take[0], z_take[0], t_take[0]
+                        dx, dy, dz, dtime = (x_take_beg - x_land_end), (y_take_beg - y_land_end), (
+                                z_take_beg - z_land_end), (time_take_beg - time_land_end)
+                        distance = np.sqrt((dx ** 2) + (dy ** 2) + (dz ** 2))
+                        if distance < radius and dtime > 0:
+                            merged_track = [a + b for a, b in zip(landing, take_off)]
+                            potential_pairs.append((distance, merged_track, i_land, i_take))
+                        else:
+                            new_landing_tracks.append(landing)
+                            new_takeoff_tracks.append(take_off)
+
+        potential_pairs.sort()
+        used_takeoff_points = set()
+        used_landing_points = set()
+        paired_tracks = []
+        for distance, merged_track, i_land, i_takeoff in potential_pairs:
+            if (i_takeoff not in used_takeoff_points) and (i_land not in used_landing_points):
+                used_takeoff_points.add(i_takeoff)
+                used_landing_points.add(i_land)
+                merge_track = [a + b for a, b in zip(landing_tracks[i_land][1], take_off_tracks[i_takeoff][1])]
+                paired_tracks.append(merge_track)
+        return paired_tracks, new_takeoff_tracks, new_landing_tracks, other_tracks
+
 
     def getPairedTracksTrial(self, radius = 0.02, boundary = 0.02):
         paired_tracks, stitch_num_land_take, stitch_num_land_walk_take, stitch_num_land_walk, stitch_num_walk_take, altered_track_nums = self.generatePairsForCSV(radius,
