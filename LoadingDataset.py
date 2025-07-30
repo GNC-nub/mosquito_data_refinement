@@ -49,6 +49,7 @@ def loading(path_matlab_file):
             else:
                 a = 0
             if trial_number != 58: # Deleting trial 59!
+                
                 if ((trial_number+a) % 20) == 0:
                     print(f'Trial: {trial_number+a}')
                 ref_trial = trial[trial_number, 0] # Idk wherefore the 0 is (found it with trial and error working)
@@ -57,7 +58,9 @@ def loading(path_matlab_file):
                 y_data_group = trial_data['y']
                 z_data_group = trial_data['z']
                 time_data_group = trial_data['time']
-
+                trial_key = f'Trial_{trial_number + a}'
+                if trial_key not in dictionary:
+                    dictionary[trial_key] = pd.DataFrame(columns=['x', 'y', 'z', 'time'])
                 for track_number in range(x_data_group.shape[0]):
                     ref_x_data = x_data_group[track_number, 0] # Idk what for the 0 is
                     ref_y_data = y_data_group[track_number, 0]
@@ -94,29 +97,15 @@ def loading(path_matlab_file):
                         y_tuple = tuple(filtered_y)
                         z_tuple = tuple(filtered_z)
                         time_tuple = tuple(filtered_time)
-
-                        dictionary[f'Trial_{trial_number + a}_Track_{track_number + 1}'] = {
-                            'x': x_tuple,
-                            'y': y_tuple,
-                            'z': z_tuple,
-                            'time': time_tuple
-                        }
+                        
+                        dictionary[trial_key].at[f'Track_{track_number + 1}', 'x'] = x_tuple
+                        dictionary[trial_key].at[f'Track_{track_number + 1}', 'y'] = y_tuple
+                        dictionary[trial_key].at[f'Track_{track_number + 1}', 'z'] = z_tuple
+                        dictionary[trial_key].at[f'Track_{track_number + 1}', 'time'] = time_tuple
         print("--Finished loading dataset--")
-        df = pd.DataFrame(dictionary)
-    return dictionary, df
-
-def loading_dataframe():
-    dictionary,df = loading(path_matlab_file1)
-    return df
-def loading_dictionary():
-    dictionary, df = loading(path_matlab_file1)
     return dictionary
 
+def loading_dataframe():
+    df = loading(path_matlab_file1)
+    return df
 
-def loading_trial_dataframe(trial_num):
-    df = loading_dataframe()
-    trial_df = df[[col for col in df.columns if col.startswith(f'Trial_{trial_num}_')]]
-    return trial_df
-
-if __name__ == "__main__":  
-    print(loading_trial_dataframe(1))
