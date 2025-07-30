@@ -35,10 +35,13 @@ def matlab_to_dataframe(filename):
     dict = {}
     with (h5py.File(filename, 'r') as mat_file):
         trial = mat_file['Database']['Trial']['Tracks']
-        print('Loading trial:')
+        print('--Loading trial--')
         for trial_number in range(trial.shape[0]):
-            if trial_number != 58:
-                print(trial_number)
+            if trial_number != 58: # Deleting trial 59
+                if (trial_number % 20) == 0:
+                    print(f'Trial: {trial_number}')
+                elif trial_number == 64:
+                    print('--Trial loading done--')
                 ref_trial = trial[trial_number, 0] # Idk wherefore the 0 is (found it with trial and error working)
                 trial_data = mat_file[ref_trial]
 
@@ -174,7 +177,8 @@ def nan_testing_paired_dataset():
                     has_values += 1
     print(f'Paired has nans: {has_nans}')
     print(f'Paired has values: {has_values}')
-nan_testing_nonpaired_dataset()
-nan_testing_paired_dataset()
+if __name__ =='__main__':
+    nan_testing_nonpaired_dataset()
+    nan_testing_paired_dataset()
 
 

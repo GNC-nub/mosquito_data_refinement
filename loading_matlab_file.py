@@ -130,7 +130,7 @@ def matlab_to_csv_map(path_matlab_file, path_csv_folder):
                     filtered_z = filtering_nan(z_list)
                     filtered_time = filtering_nan(time_list)
 
-                    if not filtered_x == []: #again assuming that if one of the filterd lists is empty than all of them are
+                    if not filtered_x == []: # Assuming that if one of the filtered lists is empty, then all of them are
                         x_tuple = tuple(filtered_x)
                         y_tuple = tuple(filtered_y)
                         z_tuple = tuple(filtered_z)
