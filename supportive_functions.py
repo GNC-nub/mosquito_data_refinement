@@ -85,9 +85,7 @@ basemap_csv_path  = os.path.join(path_csv_folder1,'database_csv')
 # (Both the side of the body and the side of the inlet)
 def landing_area_side(x, y, z, boundary=0.03, trap_height=0.388, trap_radius=0.15, inlet_height=0.083,
                       inlet_radius=0.055):
-    r = []
-    for i in range(len(x)):
-        r.append(np.sqrt(x[i]**2 + y[i]**2))
+    r = np.sqrt(x**2 + y**2)
     landing = False
 
     # landing_area of the inlet
@@ -106,9 +104,7 @@ def landing_area_side(x, y, z, boundary=0.03, trap_height=0.388, trap_radius=0.1
 # Evaluates if the x, y, z input is within the landing area at the top of the body of the trap.
 def landing_area_top(x, y, z, boundary=0.03, trap_radius=0.15, inlet_height=0.083,
                      inlet_radius=0.055):
-    r = []
-    for i in range(len(x)):
-        r.append(np.sqrt(x[i]**2 + y[i]**2))
+    r = np.sqrt(x**2 + y**2)
     landing = False
     if -(inlet_height + boundary) < z < -(inlet_height - boundary):
         if inlet_radius - boundary < r < trap_radius + boundary:
