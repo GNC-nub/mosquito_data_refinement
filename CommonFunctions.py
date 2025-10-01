@@ -215,3 +215,122 @@ def plot_density_heatpmap(density_matrix, r_edges, z_edges, dataset_name = 'df',
     plt.show()
 
 
+
+
+
+
+
+
+# ------- AI test code -------
+
+def resting_points_with_times(df, start_trial_num=1, end_trial_num=65, boundary=0.02):
+    """
+    Return representative resting points (x,y,z) and their durations (seconds) for all trials in [start, end).
+    The representative point for each resting segment is the sample closest to the trap surface.
+    """
+    all_x, all_y, all_z, all_t = [], [], [], []
+
+    for trial_num in range(start_trial_num, end_trial_num):
+        trial_key = f'Trial_{trial_num}'
+        if trial_key not in df:
+            continue
+        for _, track_data in df[trial_key].iterrows():
+            x = np.asarray(track_data.get('x'))
+            y = np.asarray(track_data.get('y'))
+            z = np.asarray(track_data.get('z'))
+            # time can be 'time' or 't' depending on source
+            time = np.asarray(track_data.get('time', track_data.get('t')))
+            if x is None or y is None or z is None or time is None:
+                continue
+            if time.size < 2:
+                continue
+
+            mask = landing_area_array(x, y, z, boundary=boundary)
+            if not np.any(mask):
+                continue
+
+            changes = np.diff(np.concatenate(([0], mask.astype(int), [0])))
+            starts = np.where(changes == 1)[0]
+            ends   = np.where(changes == -1)[0]
+
+            # Define trap cylinders once
+            cylinders = [(0.15, -0.38, -0.083), (0.055, -0.083, 0)]
+
+            for s, e in zip(starts, ends):
+                if e - s <= 1:
+                    continue
+                dur = float(time[e - 1] - time[s])
+                if dur <= 0:
+                    continue
+                seg_x = x[s:e]
+                seg_y = y[s:e]
+                seg_z = z[s:e]
+                # closest to surface in this segment
+                dists = [
+                    min(distance_to_cylinder_surface((seg_x[i], seg_y[i], seg_z[i]), cyl) for cyl in cylinders)
+                    for i in range(len(seg_x))
+                ]
+                i_min = int(np.argmin(dists))
+                all_x.append(seg_x[i_min]); all_y.append(seg_y[i_min]); all_z.append(seg_z[i_min]); all_t.append(dur)
+
+    return np.asarray(all_x), np.asarray(all_y), np.asarray(all_z), np.asarray(all_t)
+
+
+def resting_time_density_matrices_2d(x, y, z, durations, num_r_cells=20, num_z_cells=50,
+                                     first_r_coord=0, last_r_coord=0.2,
+                                     lower_z_coord=-0.5, upper_z_coord=0, area_cell=0.0001):
+    """
+    Build time-density (seconds per m^3) and event-density (events per m^3) matrices on (r,z) grid.
+    Returns (time_density, count_density, r_edges, z_edges).
+    """
+    x = np.asarray(x); y = np.asarray(y); z = np.asarray(z); durations = np.asarray(durations)
+    if x.size == 0:
+        r_edges = np.linspace(first_r_coord, last_r_coord, num_r_cells + 1)
+        z_edges = np.linspace(lower_z_coord, upper_z_coord, num_z_cells + 1)
+        empty = np.zeros((num_z_cells, num_r_cells))
+        return empty, empty, r_edges, z_edges
+
+    r = np.sqrt(x**2 + y**2)
+    r_edges = np.linspace(first_r_coord, last_r_coord, num_r_cells + 1)
+    z_edges = np.linspace(lower_z_coord, upper_z_coord, num_z_cells + 1)
+
+    # Sum of durations per bin
+    time_sum, _, _ = np.histogram2d(r, z, bins=(r_edges, z_edges), weights=durations)
+    time_sum = time_sum.T  # match z-r orientation
+
+    # Count of events per bin
+    count, _, _ = np.histogram2d(r, z, bins=(r_edges, z_edges))
+    count = count.T
+
+    volume_matrix = get_volume_matrix(num_r_cells, num_z_cells, first_r_coord, last_r_coord,
+                                      lower_z_coord, upper_z_coord, area_cell)
+
+    # Densities per unit volume
+    time_density = np.divide(time_sum, volume_matrix, out=np.zeros_like(time_sum, dtype=float), where=volume_matrix != 0)
+    count_density = np.divide(count,    volume_matrix, out=np.zeros_like(count,    dtype=float), where=volume_matrix != 0)
+
+    return time_density, count_density, r_edges, z_edges
+
+
+def plot_heatmap_with_trap(matrix, r_edges, z_edges, colorbar_label='Density', title='',
+                           xlim=(0, 0.3), ylim=(-0.45, 0.1)):
+    """
+    Generic heatmap plotter with trap overlay for any (z x r) matrix on edges (r_edges, z_edges).
+    """
+    plt.figure(figsize=(6, 8))
+    plt.imshow(matrix, origin='lower', aspect='auto',
+               extent=[r_edges[0], r_edges[-1], z_edges[0], z_edges[-1]],
+               cmap=LinearSegmentedColormap.from_list("custom_red_hot", [(1,1,1),(1,0.8,0),(1,0,0),(0.5,0,0)]) )
+    plt.colorbar(label=colorbar_label)
+
+    inlet_r, inlet_z, body_r, body_z = getTrap2D()
+    plt.fill(body_r, body_z, color='purple', linewidth=0, alpha=0.5)
+    plt.fill(inlet_r, inlet_z, color='purple', linewidth=0, alpha=0.5)
+
+    plt.xlim(*xlim)
+    plt.ylim(*ylim)
+    plt.xlabel('r coordinate')
+    plt.ylabel('z coordinate')
+    plt.title(title)
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.show()
