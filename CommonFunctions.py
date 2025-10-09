@@ -221,7 +221,7 @@ def plot_density_heatpmap(density_matrix, r_edges, z_edges, dataset_name = 'df',
 
 
 
-# ------- AI test code -------
+# ------- AI test code ------- For times ------ 
 
 def resting_points_with_times(df, start_trial_num=1, end_trial_num=65, boundary=0.02):
     """
@@ -334,3 +334,6 @@ def plot_heatmap_with_trap(matrix, r_edges, z_edges, colorbar_label='Density', t
     plt.title(title)
     plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
+
+
+    # ----- End AI test code ------ 
