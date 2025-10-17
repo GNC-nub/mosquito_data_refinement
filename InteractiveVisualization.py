@@ -54,9 +54,11 @@ def show_interactive_track(trial_key='Trial_1', track_key='Track_3', boundary=0.
     time_text = ax.text2D(0.02, 0.95, f't = {t[0]:.3f} s', transform=ax.transAxes)
 
     slider = widgets.IntSlider(value=0, min=0, max=len(t)-1, step=1, description='Index', continuous_update=True)
-    play = widgets.Play(interval=50, value=0, min=0, max=len(t)-1, step=1, description=False)
+    play = widgets.Play(interval=50, value=0, min=0, max=len(t)-1, step=1, description='')  # <- fix
+    play.style = {'description_width': '0px'}  # optional: hide label space
     widgets.jslink((play, 'value'), (slider, 'value'))
     time_label = widgets.Label(value=f't = {t[0]:.3f} s')
+
 
     def update(i):
         color = 'red' if mask[i] else 'blue'
@@ -82,3 +84,5 @@ def show_interactive_track(trial_key='Trial_1', track_key='Track_3', boundary=0.
 
 def show_track3_trial1(boundary=0.02, df=None, merged_df=None):
     return show_interactive_track('Trial_1', 'Track_3', boundary=boundary, df=df, merged_df=merged_df)
+
+

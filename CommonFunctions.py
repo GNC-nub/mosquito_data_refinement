@@ -4,7 +4,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 
 
-## Landing Functions: 
+## ---------------    Landing Functions ---------------
 # Now this function can handle whole arrays
 def landing_area_side(x, y, z, boundary=0.02, trap_height=0.388, trap_radius=0.15, inlet_height=0.083,
                       inlet_radius=0.055):
@@ -58,7 +58,7 @@ def transformation_2D(x, y, z):
     return r, z
 
 
-# functions for traps: 
+#  ------------- traps ----------------
 
 def getTrap(body_lower_z=-0.38, body_upper_z=-0.083, inlet_upper_z=0,
             body_radius=0.15, inlet_radius=0.055, num_points=50):
@@ -101,7 +101,7 @@ def plotTrap(ax):
     ax.plot_surface(x_inlet, y_inlet, z_inlet, alpha=0.3, color="purple", edgecolor="none")
 
 
-## Resting points: 
+## ----------------- Resting points ------------------
 
 def distance_to_cylinder_surface(point, cylinder):
     x, y, z = point
@@ -167,6 +167,70 @@ def resting_points(df, start_trial_num=1, end_trial_num=65, boundary = 0.2):
     return np.array(all_x), np.array(all_y), np.array(all_z)
     
 
+## ------------ Resting times ---------------
+
+
+def find_resting_times_in_track(x, y, z, time, boundary=0.02):
+    """
+    Returns: list of [x, y, z, duration]. Aka resting points with durations.
+    """
+    x = np.array(x)
+    y = np.array(y)
+    z = np.array(z)
+    time = np.asarray(time)
+    mask = landing_area_array(x, y, z, boundary=boundary)  # vectorized mask
+    resting_times = []
+    
+    if not np.any(mask):
+        return resting_times
+
+    inside = np.diff(np.concatenate(([0], mask.astype(int), [0])))
+    start_indices = np.where(inside == 1)[0]
+    end_indices = np.where(inside == -1)[0]
+
+    # Trap cylinders (radius, z_min, z_max)
+    cylinders = [(0.15, -0.38, -0.083), (0.055, -0.083, 0)]
+
+    for start, end in zip(start_indices, end_indices):
+        # Require at least two samples to get positive duration
+        if end - start <= 1:
+            continue
+        dur = float(time[end - 1] - time[start])
+        if dur <= 0:
+            continue
+        
+        segment_x = x[start:end]
+        segment_y = y[start:end]
+        segment_z = z[start:end]
+
+        # Compute distances to trap surface for each point in the segment
+        distances = np.array([
+            min(distance_to_cylinder_surface((segment_x[i], segment_y[i], segment_z[i]), cyl) for cyl in cylinders)
+            for i in range(len(segment_x))
+        ])
+
+        min_idx = np.argmin(distances)
+        resting_times.append((segment_x[min_idx], segment_y[min_idx], segment_z[min_idx], dur))
+    return resting_times
+
+def resting_times(df, start_trial_num=1, end_trial_num=65, boundary=0.2):
+    all_x, all_y, all_z, all_durations = [], [], [], []
+
+    for trial_num in range(start_trial_num, end_trial_num):
+        for _, track_data in df[f'Trial_{trial_num}'].iterrows():
+            points = find_resting_times_in_track(track_data['x'], track_data['y'], track_data['z'], track_data['time'], boundary=boundary)
+            for px, py, pz, dur in points:
+                all_x.append(px)
+                all_y.append(py)
+                all_z.append(pz)
+                all_durations.append(dur)
+
+    return np.array(all_x), np.array(all_y), np.array(all_z), np.array(all_durations)
+
+
+## ------------- Density Matrices 2D ----------------
+
+
 def get_volume_matrix(num_r_cells=20, num_z_cells=50, first_r_coord=0, last_r_coord=0.2,
                       lower_z_coord=-0.5, upper_z_coord=0, area_cell=0.0001):
     distance_row = np.linspace(first_r_coord + 0.005, last_r_coord - 0.005, num_r_cells)
@@ -187,6 +251,22 @@ def density_matrix_2d_normalized(x, y, z, num_r_cells=20, num_z_cells=50,
                                       lower_z_coord, upper_z_coord)
     density_matrix = hist / volume_matrix
     return density_matrix, r_edges, z_edges
+
+
+def density_matrix_2d_weighted_normalized(x, y, z, weights, num_r_cells=20, num_z_cells=50,
+                            first_r_coord=0, last_r_coord=0.2,
+                            lower_z_coord=-0.5, upper_z_coord=0):
+    r = np.sqrt(x**2 + y**2)
+    r_edges = np.linspace(first_r_coord, last_r_coord, num_r_cells + 1)
+    z_edges = np.linspace(lower_z_coord, upper_z_coord, num_z_cells + 1)
+    hist, _, _ = np.histogram2d(r, z, bins=(r_edges, z_edges), weights=weights)
+    hist = hist.T  # match z-r orientation
+
+    volume_matrix = get_volume_matrix(num_r_cells, num_z_cells, first_r_coord, last_r_coord,
+                                      lower_z_coord, upper_z_coord)
+    density_matrix = hist / volume_matrix
+    return density_matrix, r_edges, z_edges
+
 
 def plot_density_heatpmap(density_matrix, r_edges, z_edges, dataset_name = 'df', boundary = 0.02):
     colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]
@@ -215,66 +295,37 @@ def plot_density_heatpmap(density_matrix, r_edges, z_edges, dataset_name = 'df',
     plt.show()
 
 
+def plot_density_heatpmap_restingtime(density_matrix, r_edges, z_edges, dataset_name = 'df', boundary = 0.02):
+    colors = [(1, 1, 1), (1, 0.8, 0), (1, 0, 0), (0.5, 0, 0)]
+    cmap = LinearSegmentedColormap.from_list("custom_red_hot", colors)
 
+    plt.figure(figsize=(6, 8))
+    plt.imshow(density_matrix, origin='lower', aspect='auto',
+               extent=[r_edges[0], r_edges[-1], z_edges[0], z_edges[-1]],
+               cmap=cmap)
+
+    plt.colorbar(label='Resting time per unit volume')
+    inlet_r, inlet_z, body_r, body_z = getTrap2D()
+
+    # Fill the trap body
+    plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
+
+    # Fill the inlet
+    plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
+
+    plt.xlim(0, 0.3)
+    plt.ylim(-0.4, 0.1)
+    plt.xlabel('r coordinate')
+    plt.ylabel('z coordinate')
+    plt.title(f'Resting Times Density Heatmap ({dataset_name}, boundary = {boundary})')
+    plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
+    plt.show()
 
 
 
 
 
 # ------- AI test code ------- For times ------ 
-
-def resting_points_with_times(df, start_trial_num=1, end_trial_num=65, boundary=0.02):
-    """
-    Return representative resting points (x,y,z) and their durations (seconds) for all trials in [start, end).
-    The representative point for each resting segment is the sample closest to the trap surface.
-    """
-    all_x, all_y, all_z, all_t = [], [], [], []
-
-    for trial_num in range(start_trial_num, end_trial_num):
-        trial_key = f'Trial_{trial_num}'
-        if trial_key not in df:
-            continue
-        for _, track_data in df[trial_key].iterrows():
-            x = np.asarray(track_data.get('x'))
-            y = np.asarray(track_data.get('y'))
-            z = np.asarray(track_data.get('z'))
-            # time can be 'time' or 't' depending on source
-            time = np.asarray(track_data.get('time', track_data.get('t')))
-            if x is None or y is None or z is None or time is None:
-                continue
-            if time.size < 2:
-                continue
-
-            mask = landing_area_array(x, y, z, boundary=boundary)
-            if not np.any(mask):
-                continue
-
-            changes = np.diff(np.concatenate(([0], mask.astype(int), [0])))
-            starts = np.where(changes == 1)[0]
-            ends   = np.where(changes == -1)[0]
-
-            # Define trap cylinders once
-            cylinders = [(0.15, -0.38, -0.083), (0.055, -0.083, 0)]
-
-            for s, e in zip(starts, ends):
-                if e - s <= 1:
-                    continue
-                dur = float(time[e - 1] - time[s])
-                if dur <= 0:
-                    continue
-                seg_x = x[s:e]
-                seg_y = y[s:e]
-                seg_z = z[s:e]
-                # closest to surface in this segment
-                dists = [
-                    min(distance_to_cylinder_surface((seg_x[i], seg_y[i], seg_z[i]), cyl) for cyl in cylinders)
-                    for i in range(len(seg_x))
-                ]
-                i_min = int(np.argmin(dists))
-                all_x.append(seg_x[i_min]); all_y.append(seg_y[i_min]); all_z.append(seg_z[i_min]); all_t.append(dur)
-
-    return np.asarray(all_x), np.asarray(all_y), np.asarray(all_z), np.asarray(all_t)
-
 
 def resting_time_density_matrices_2d(x, y, z, durations, num_r_cells=20, num_z_cells=50,
                                      first_r_coord=0, last_r_coord=0.2,
