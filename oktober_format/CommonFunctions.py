@@ -36,10 +36,54 @@ def landing_area_top(x, y, z, boundary=0.02, trap_radius=0.15, inlet_height=0.08
 
 def landing_area_array(x, y, z, boundary=0.02):
     return landing_area_top(x, y, z, boundary=boundary) | landing_area_side(x, y, z, boundary=boundary)
-    
-    
 
-# transform list of 3D x, y, z (or x, y, z points) to r, z 2D
+# ---- Evaluates if the x, y, z POINT input is within the landing area at the side of the trap ----
+    
+def landing_area_point_side(x, y, z, boundary=0.03, trap_height=0.388, trap_radius=0.15, inlet_height=0.083,
+                      inlet_radius=0.055):
+    r = np.sqrt(x**2 + y**2)
+    landing = False
+
+    # landing_area of the inlet
+    if -boundary < z < 0:
+        if inlet_radius < r < inlet_radius + boundary:
+            landing = True
+    elif -(inlet_height - boundary) < z < -boundary:
+        if inlet_radius - boundary < r < inlet_radius + boundary:
+            landing = True
+    # landing_area of the body side
+    elif -trap_height < z < -(inlet_height + boundary):
+        if trap_radius - boundary < r < trap_radius + boundary:
+            landing = True
+    return landing
+
+
+def landing_area_point_top(x, y, z, boundary=0.03, trap_radius=0.15, inlet_height=0.083,
+                     inlet_radius=0.055):
+    r = np.sqrt(x**2 + y**2)
+    landing = False
+    if -(inlet_height + boundary) < z < -(inlet_height - boundary):
+        if inlet_radius - boundary < r < trap_radius + boundary:
+            landing = True
+    return landing
+
+
+def landing_area_point(x, y, z, specific_area = 'whole', boundary=0.03):
+    boolean = False
+    if specific_area == 'whole':
+        if landing_area_point_top(x, y, z, boundary=boundary) or landing_area_point_side(x, y, z, boundary=boundary):
+            boolean = True
+    elif specific_area == 'top':
+        if landing_area_point_top(x, y, z, boundary=boundary):
+            boolean = True
+    elif specific_area == 'side':
+        if landing_area_point_side(x, y, z, boundary=boundary):
+            boolean = True
+    return boolean
+
+
+
+# ----- transform list of 3D x, y, z (or x, y, z points) to r, z 2D ----
 def transformation_2D(x, y, z):
     """
     Convert 3D Cartesian coordinates (x, y, z) into 2D cylindrical coordinates (r, z).
@@ -307,10 +351,7 @@ def plot_density_heatpmap_restingtime(density_matrix, r_edges, z_edges, dataset_
     plt.colorbar(label='Resting time per unit volume')
     inlet_r, inlet_z, body_r, body_z = getTrap2D()
 
-    # Fill the trap body
     plt.fill(body_r, body_z, color='purple', linewidth = 0, alpha = 0.5)
-
-    # Fill the inlet
     plt.fill(inlet_r, inlet_z, color='purple', linewidth = 0, alpha = 0.5)
 
     plt.xlim(0, 0.3)
