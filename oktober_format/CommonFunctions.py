@@ -334,7 +334,7 @@ def plot_density_heatpmap(density_matrix, r_edges, z_edges, dataset_name = 'df',
     plt.ylim(-0.4, 0.1)
     plt.xlabel('r coordinate')
     plt.ylabel('z coordinate')
-    plt.title(f'Resting Points Density Heatmap ({dataset_name}, boundary = {boundary})')
+    plt.title(f'Resting Points Density Heatmap\n({dataset_name}, boundary = {boundary})')
     plt.gca().set_aspect('equal', adjustable='box')  # Ensure aspect ratio is square
     plt.show()
 
