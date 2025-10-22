@@ -197,7 +197,7 @@ def find_resting_points_in_track(x, y, z, boundary = 0.02):
     return resting_points
 
 
-def resting_points(df, start_trial_num=1, end_trial_num=65, boundary = 0.2):
+def resting_points(df, start_trial_num=1, end_trial_num=65, boundary = 0.02):
     all_x, all_y, all_z = [], [], []
 
     for trial_num in range(start_trial_num, end_trial_num):
