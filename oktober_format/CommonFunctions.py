@@ -1,3 +1,37 @@
+"""
+Docstring for oktober_format.CommonFunctions
+
+This module contains the following functions:
+- landing_area_side: Determines the landing area at the side of the trap.
+- landing_area_top: Determines the landing area at the top of the trap.
+- landing_area_array: Combines the side and top landing areas.
+- landing_area_point_side: Checks if a point is within the side landing area.
+- landing_area_point_top: Checks if a point is within the top landing area.
+- landing_area_point: Checks if a point is within the landing area (top or side).
+- transformation_2D: Converts 3D Cartesian coordinates to 2D cylindrical coordinates.
+- getTrap: Generates the coordinates for the trap's body and inlet.
+- getTrap2D: Generates the 2D coordinates for the trap's body and inlet
+- plotTrap: Plots the trap in a 3D axis.
+- distance_to_cylinder_surface: Calculates the distance from a point to the surface of a cylinder
+- find_resting_points_in_track: Finds resting points in a track based on landing areas.
+- resting_points: Finds all resting points across multiple trials.
+- find_resting_times_in_track: Finds resting points with durations in a track.
+- resting_times: Finds all resting points with durations across multiple trials.
+- get_volume_matrix: Generates a volume matrix for density calculations.
+- density_matrix_2d_normalized: Computes a normalized 2D density matrix from coordinates
+- density_matrix_2d_weighted_normalized: Computes a weighted normalized 2D density matrix.
+- plot_density_heatpmap: Plots a heatmap of the density matrix.
+- plot_density_heatpmap_restingtime: Plots a heatmap of the resting times
+- get_volume_matrix: Generates a volume matrix for density calculations.
+- density_matrix_2d_normalized: Computes a normalized 2D density matrix from coordinates
+- density_matrix_2d_weighted_normalized: Computes a weighted normalized 2D density
+matrix.
+- plot_density_heatpmap: Plots a heatmap of the density matrix.
+- plot_density_heatpmap_restingtime: Plots a heatmap of the resting times
+
+"""
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
